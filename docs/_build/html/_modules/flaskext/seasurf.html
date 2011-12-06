@@ -1,0 +1,192 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>flaskext.seasurf &mdash; SeaSurf v0.1 documentation</title>
+    <link rel="stylesheet" href="../../_static/flasky.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../',
+        VERSION:     '0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <link rel="top" title="SeaSurf v0.1 documentation" href="../../index.html" />
+    <link rel="up" title="Module code" href="../index.html" /> 
+  </head>
+  <body>
+  
+  
+
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <h1>Source code for flaskext.seasurf</h1><div class="highlight"><pre>
+<span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    flaskext.seasurf</span>
+<span class="sd">    ----------------</span>
+<span class="sd">    </span>
+<span class="sd">    A Flask extension providing fairly good protection against cross-site </span>
+<span class="sd">    request forgery (CSRF), otherwise known as &quot;sea surf&quot;.</span>
+<span class="sd">&#39;&#39;&#39;</span>
+
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">absolute_import</span>
+
+<span class="kn">import</span> <span class="nn">hashlib</span>
+<span class="kn">import</span> <span class="nn">random</span>
+<span class="kn">import</span> <span class="nn">urlparse</span>
+
+<span class="kn">from</span> <span class="nn">flask</span> <span class="kn">import</span> <span class="n">session</span><span class="p">,</span> <span class="n">request</span><span class="p">,</span> <span class="n">abort</span>
+
+<span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">random</span><span class="p">,</span> <span class="s">&#39;SystemRandom&#39;</span><span class="p">):</span>
+    <span class="n">randrange</span> <span class="o">=</span> <span class="n">random</span><span class="o">.</span><span class="n">SystemRandom</span><span class="p">()</span><span class="o">.</span><span class="n">randrange</span>
+<span class="k">else</span><span class="p">:</span>
+    <span class="n">randrange</span> <span class="o">=</span> <span class="n">random</span><span class="o">.</span><span class="n">randrange</span>
+<span class="n">_MAX_CSRF_KEY</span> <span class="o">=</span> <span class="il">18446744073709551616L</span> <span class="c"># 2 &lt;&lt; 63</span>
+
+<span class="n">REASON_NO_REFERER</span> <span class="o">=</span> <span class="s">&#39;Referer checking failed: no referer.&#39;</span>
+<span class="n">REASON_BAD_REFERER</span> <span class="o">=</span> <span class="s">&#39;Referer checking failed: {} does not match {}.&#39;</span>
+<span class="n">REASON_NO_CSRF_TOKEN</span> <span class="o">=</span> <span class="s">&#39;CSRF token not set.&#39;</span>
+<span class="n">REASON_BAD_TOKEN</span> <span class="o">=</span> <span class="s">&#39;CSRF token missing or incorrect.&#39;</span>
+
+
+<span class="k">def</span> <span class="nf">csrf</span><span class="p">(</span><span class="n">app</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;Helper function to wrap the XSRF class.&#39;&#39;&#39;</span>
+    <span class="n">SeaSurf</span><span class="p">(</span><span class="n">app</span><span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">xsrf</span><span class="p">(</span><span class="n">app</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;Helper function to wrap the XSRF class.&#39;&#39;&#39;</span>
+    <span class="n">SeaSurf</span><span class="p">(</span><span class="n">app</span><span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">_same_origin</span><span class="p">(</span><span class="n">url1</span><span class="p">,</span> <span class="n">url2</span><span class="p">):</span>
+    <span class="n">p1</span><span class="p">,</span> <span class="n">p2</span> <span class="o">=</span> <span class="n">urlparse</span><span class="o">.</span><span class="n">urlparse</span><span class="p">(</span><span class="n">url1</span><span class="p">),</span> <span class="n">urlparse</span><span class="o">.</span><span class="n">urlparse</span><span class="p">(</span><span class="n">url2</span><span class="p">)</span>
+    <span class="k">return</span> <span class="p">(</span><span class="n">p1</span><span class="o">.</span><span class="n">scheme</span><span class="p">,</span> <span class="n">p1</span><span class="o">.</span><span class="n">hostname</span><span class="p">,</span> <span class="n">p1</span><span class="o">.</span><span class="n">port</span><span class="p">)</span> <span class="o">==</span> <span class="p">(</span><span class="n">p2</span><span class="o">.</span><span class="n">scheme</span><span class="p">,</span> <span class="n">p2</span><span class="o">.</span><span class="n">hostname</span><span class="p">,</span> <span class="n">p2</span><span class="o">.</span><span class="n">port</span><span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">_constant_time_compare</span><span class="p">(</span><span class="n">val1</span><span class="p">,</span> <span class="n">val2</span><span class="p">):</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">val1</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">val2</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">False</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">for</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">val1</span><span class="p">,</span> <span class="n">val2</span><span class="p">):</span>
+        <span class="n">result</span> <span class="o">|=</span> <span class="nb">ord</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">^</span> <span class="nb">ord</span><span class="p">(</span><span class="n">y</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">result</span> <span class="o">==</span> <span class="mi">0</span>
+
+
+<div class="viewcode-block" id="SeaSurf"><a class="viewcode-back" href="../../index.html#flaskext.seasurf.SeaSurf">[docs]</a><span class="k">class</span> <span class="nc">SeaSurf</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span> 
+    <span class="n">_exempt_views</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">_secret_key</span> <span class="o">=</span> <span class="bp">None</span>
+    <span class="n">_testing</span> <span class="o">=</span> <span class="bp">None</span>
+    
+<div class="viewcode-block" id="SeaSurf.__init__"><a class="viewcode-back" href="../../index.html#flaskext.seasurf.SeaSurf.__init__">[docs]</a>    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">app</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span> 
+        <span class="k">if</span> <span class="n">app</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_secret_key</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_secret_key</span> <span class="o">=</span> <span class="n">app</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;SECRET_KEY&#39;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_testing</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_testing</span> <span class="o">=</span> <span class="n">app</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;TESTING&#39;</span><span class="p">,</span> <span class="bp">False</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">init_app</span><span class="p">(</span><span class="n">app</span><span class="p">)</span>
+    </div>
+    <span class="k">def</span> <span class="nf">init_app</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">app</span><span class="p">):</span>
+        <span class="nd">@app.before_request</span>
+        <span class="k">def</span> <span class="nf">_validate_integrity</span><span class="p">():</span>
+            <span class="sd">&#39;&#39;&#39;Determine if a view is exempt from CSRF validation and if not </span>
+<span class="sd">            then ensure the validity of the CSRF token.</span>
+<span class="sd">            </span>
+<span class="sd">            Validation is suspended if `TESTING` is True in your application&#39;s </span>
+<span class="sd">            configuration.</span>
+<span class="sd">            &#39;&#39;&#39;</span>
+            
+            <span class="k">if</span> <span class="n">request</span><span class="o">.</span><span class="n">method</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">(</span><span class="s">&#39;GET&#39;</span><span class="p">,</span> <span class="s">&#39;HEAD&#39;</span><span class="p">,</span> <span class="s">&#39;OPTIONS&#39;</span><span class="p">,</span> <span class="s">&#39;TRACE&#39;</span><span class="p">):</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_testing</span><span class="p">:</span>
+                    <span class="k">return</span> <span class="c"># don&#39;t validate for testing</span>
+                
+                <span class="k">if</span> <span class="n">request</span><span class="o">.</span><span class="n">endpoint</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_exempt_views</span><span class="p">:</span>
+                    <span class="k">return</span>
+                
+                <span class="k">if</span> <span class="n">request</span><span class="o">.</span><span class="n">is_secure</span><span class="p">:</span>
+                    <span class="n">referer</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">headers</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;HTTP_REFERER&#39;</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="n">referer</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+                        <span class="n">error</span> <span class="o">=</span> <span class="p">(</span><span class="n">REASON_NO_REFERER</span><span class="p">,</span> <span class="n">request</span><span class="o">.</span><span class="n">path</span><span class="p">)</span>
+                        <span class="n">app</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s">&#39;Forbidden ({}): {}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="o">*</span><span class="n">error</span><span class="p">))</span>
+                        <span class="k">return</span> <span class="n">abort</span><span class="p">(</span><span class="mi">403</span><span class="p">)</span>
+                    
+                    <span class="n">allowed_referer</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">url_root</span>
+                    <span class="k">if</span> <span class="ow">not</span> <span class="n">_same_origin</span><span class="p">(</span><span class="n">referer</span><span class="p">,</span> <span class="n">allowed_referer</span><span class="p">):</span>
+                        <span class="n">error</span> <span class="o">=</span> <span class="n">REASON_BAD_REFERER</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">referer</span><span class="p">,</span> <span class="n">allowed_referer</span><span class="p">)</span>
+                        <span class="n">error</span> <span class="o">=</span> <span class="p">(</span><span class="n">error</span><span class="p">,</span> <span class="n">request</span><span class="o">.</span><span class="n">path</span><span class="p">)</span>
+                        <span class="n">app</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s">&#39;Forbidden ({}): {}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="o">*</span><span class="n">error</span><span class="p">))</span>
+                        <span class="k">return</span> <span class="n">abort</span><span class="p">(</span><span class="mi">403</span><span class="p">)</span>
+                            
+            <span class="n">csrf_token</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s">&#39;_csrf_token&#39;</span><span class="p">,</span> <span class="s">&#39;&#39;</span><span class="p">)</span>
+            <span class="n">request_csrf_token</span> <span class="o">=</span> <span class="s">&#39;&#39;</span>
+            <span class="k">if</span> <span class="n">request</span><span class="o">.</span><span class="n">method</span> <span class="o">==</span> <span class="s">&#39;POST&#39;</span><span class="p">:</span>
+                <span class="n">request_csrf_token</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">form</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;_csrf_token&#39;</span><span class="p">,</span> <span class="s">&#39;&#39;</span><span class="p">)</span>
+            
+            <span class="k">if</span> <span class="n">request_csrf_token</span> <span class="o">==</span> <span class="s">&#39;&#39;</span><span class="p">:</span>
+                <span class="n">request_csrf_token</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">headers</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;HTTP_X_CSRFTOKEN&#39;</span><span class="p">,</span> <span class="s">&#39;&#39;</span><span class="p">)</span>
+            
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">_constant_time_compare</span><span class="p">(</span><span class="n">request_csrf_token</span><span class="p">,</span> <span class="n">csrf_token</span><span class="p">):</span>
+                <span class="n">error</span> <span class="o">=</span> <span class="p">(</span><span class="n">REASON_BAD_TOKEN</span><span class="p">,</span> <span class="n">request</span><span class="o">.</span><span class="n">path</span><span class="p">)</span>
+                <span class="n">app</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s">&#39;Forbidden ({}): {}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="o">*</span><span class="n">error</span><span class="p">))</span>
+                <span class="k">return</span> <span class="n">abort</span><span class="p">(</span><span class="mi">403</span><span class="p">)</span>
+        
+        <span class="c"># expose the CSRF token generation to the template</span>
+        <span class="n">app</span><span class="o">.</span><span class="n">jinja_env</span><span class="o">.</span><span class="n">globals</span><span class="p">[</span><span class="s">&#39;csrf_token&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_set_token</span>
+    
+<div class="viewcode-block" id="SeaSurf.exempt"><a class="viewcode-back" href="../../index.html#flaskext.seasurf.SeaSurf.exempt">[docs]</a>    <span class="k">def</span> <span class="nf">exempt</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">view</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;A decorator that can be used to exempt a view from CSRF validation.</span>
+<span class="sd">        </span>
+<span class="sd">        Example usage usage might look something like this: </span>
+<span class="sd">            </span>
+<span class="sd">            csrf = SeaSurf(app)</span>
+<span class="sd">            </span>
+<span class="sd">            @xsrf.exempt</span>
+<span class="sd">            @app.route(&#39;/some_view&#39;)</span>
+<span class="sd">            def some_view():</span>
+<span class="sd">                &quot;&quot;&quot;This view is exempt from CSRF validation.&#39;</span>
+<span class="sd">                return render_template(&#39;some_view.html&#39;)</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_exempt_views</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">view</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">view</span>
+    </div>
+    <span class="k">def</span> <span class="nf">_generate_token</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;Generates a token with randomly salted SHA1. Returns a string.&#39;&#39;&#39;</span>
+        <span class="n">salt</span> <span class="o">=</span> <span class="p">(</span><span class="n">randrange</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">_MAX_CSRF_KEY</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">_secret_key</span><span class="p">)</span>
+        <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="n">hashlib</span><span class="o">.</span><span class="n">sha1</span><span class="p">(</span><span class="s">&#39;{}{}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="o">*</span><span class="n">salt</span><span class="p">))</span><span class="o">.</span><span class="n">hexdigest</span><span class="p">())</span>
+    
+    <span class="k">def</span> <span class="nf">_set_token</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;Sets a token on the session cookie object.&#39;&#39;&#39;</span>
+        <span class="n">csrf_token</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_generate_token</span><span class="p">()</span>
+        <span class="k">if</span> <span class="s">&#39;_csrf_token&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">session</span><span class="p">:</span>
+            <span class="n">session</span><span class="p">[</span><span class="s">&#39;_csrf_token&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">csrf_token</span>
+        <span class="k">return</span> <span class="n">session</span><span class="p">[</span><span class="s">&#39;_csrf_token&#39;</span><span class="p">]</span>
+</pre></div></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+  
+    <a href="http://github.com/maxcountryman/flask-seasurf"><img style="position: fixed; top: 0; right: 0; border: 0;"
+    src="http://s3.amazonaws.com/github/ribbons/forkme_right_darkblue_121621.png" alt="Fork me on GitHub" /></a>
+  
+
+  
+
+  </body>
+</html>

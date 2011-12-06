@@ -1,0 +1,105 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Flask-SeaSurf &mdash; SeaSurf v0.1 documentation</title>
+    <link rel="stylesheet" href="_static/flasky.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '',
+        VERSION:     '0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="SeaSurf v0.1 documentation" href="#" /> 
+  </head>
+  <body>
+  
+  
+  <div class=indexwrapper>
+  
+
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="flask-seasurf">
+<h1>Flask-SeaSurf<a class="headerlink" href="#flask-seasurf" title="Permalink to this headline">¶</a></h1>
+<span class="target" id="module-flaskext.seasurf"></span><p>SeaSurf is a Flask extension for preventing cross-site request forgery. CSRF
+vulnerabilities have been found in large and popular sites such as YouTube.
+These attacks are problematic because the mechanism they use is relatively
+easy to exploit. This extension attempts to aid you in securing your
+application from such attacks.</p>
+<p>This extension is based on the excellent Django middleware.</p>
+<div class="section" id="installation">
+<h2>Installation<a class="headerlink" href="#installation" title="Permalink to this headline">¶</a></h2>
+<p>Install the extension with one of the following commands:</p>
+<div class="highlight-python"><pre>$ easy_install flask-seasurf</pre>
+</div>
+<p>or alternatively if you have pip installed:</p>
+<div class="highlight-python"><pre>$ pip install flask-seasurf</pre>
+</div>
+</div>
+<div class="section" id="usage">
+<h2>Usage<a class="headerlink" href="#usage" title="Permalink to this headline">¶</a></h2>
+<p>Using SeaSurf is fairly straightforward. Begin by importing the extension and
+then passing your application object back to the extension, like this:</p>
+<blockquote>
+<div>from flaskext.seasurf import SeaSurf
+csrf = SeaSurf(app)</div></blockquote>
+</div>
+<div class="section" id="api">
+<h2>API<a class="headerlink" href="#api" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="flaskext.seasurf.SeaSurf">
+<em class="property">class </em><tt class="descclassname">flaskext.seasurf.</tt><tt class="descname">SeaSurf</tt><big>(</big><em>app=None</em><big>)</big><a class="reference internal" href="_modules/flaskext/seasurf.html#SeaSurf"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#flaskext.seasurf.SeaSurf" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="method">
+<dt id="flaskext.seasurf.SeaSurf.exempt">
+<tt class="descname">exempt</tt><big>(</big><em>view</em><big>)</big><a class="reference internal" href="_modules/flaskext/seasurf.html#SeaSurf.exempt"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#flaskext.seasurf.SeaSurf.exempt" title="Permalink to this definition">¶</a></dt>
+<dd><p>A decorator that can be used to exempt a view from CSRF validation.</p>
+<p>Example usage usage might look something like this:</p>
+<blockquote>
+<div><p>csrf = SeaSurf(app)</p>
+<p>&#64;xsrf.exempt
+&#64;app.route(&#8216;/some_view&#8217;)
+def some_view():</p>
+<blockquote>
+<div>&#8220;&#8221;&#8220;This view is exempt from CSRF validation.&#8217;
+return render_template(&#8216;some_view.html&#8217;)</div></blockquote>
+</div></blockquote>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+  
+    <a href="http://github.com/maxcountryman/flask-seasurf"><img style="position: fixed; top: 0; right: 0; border: 0;"
+    src="http://s3.amazonaws.com/github/ribbons/forkme_right_darkblue_121621.png" alt="Fork me on GitHub" /></a>
+  
+
+  
+  </div>
+  
+
+  </body>
+</html>
