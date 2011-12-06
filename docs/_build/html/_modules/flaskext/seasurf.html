@@ -100,7 +100,7 @@
                 <span class="bp">self</span><span class="o">.</span><span class="n">_testing</span> <span class="o">=</span> <span class="n">app</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;TESTING&#39;</span><span class="p">,</span> <span class="bp">False</span><span class="p">)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">init_app</span><span class="p">(</span><span class="n">app</span><span class="p">)</span>
     </div>
-    <span class="k">def</span> <span class="nf">init_app</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">app</span><span class="p">):</span>
+<div class="viewcode-block" id="SeaSurf.init_app"><a class="viewcode-back" href="../../index.html#flaskext.seasurf.SeaSurf.init_app">[docs]</a>    <span class="k">def</span> <span class="nf">init_app</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">app</span><span class="p">):</span>
         <span class="nd">@app.before_request</span>
         <span class="k">def</span> <span class="nf">_validate_integrity</span><span class="p">():</span>
             <span class="sd">&#39;&#39;&#39;Determine if a view is exempt from CSRF validation and if not </span>
@@ -146,7 +146,7 @@
         
         <span class="c"># expose the CSRF token generation to the template</span>
         <span class="n">app</span><span class="o">.</span><span class="n">jinja_env</span><span class="o">.</span><span class="n">globals</span><span class="p">[</span><span class="s">&#39;csrf_token&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_set_token</span>
-    
+    </div>
 <div class="viewcode-block" id="SeaSurf.exempt"><a class="viewcode-back" href="../../index.html#flaskext.seasurf.SeaSurf.exempt">[docs]</a>    <span class="k">def</span> <span class="nf">exempt</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">view</span><span class="p">):</span>
         <span class="sd">&#39;&#39;&#39;A decorator that can be used to exempt a view from CSRF validation.</span>
 <span class="sd">        </span>

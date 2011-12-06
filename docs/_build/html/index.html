@@ -65,20 +65,79 @@ csrf = SeaSurf(app)</div></blockquote>
 <dl class="class">
 <dt id="flaskext.seasurf.SeaSurf">
 <em class="property">class </em><tt class="descclassname">flaskext.seasurf.</tt><tt class="descname">SeaSurf</tt><big>(</big><em>app=None</em><big>)</big><a class="reference internal" href="_modules/flaskext/seasurf.html#SeaSurf"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#flaskext.seasurf.SeaSurf" title="Permalink to this definition">¶</a></dt>
-<dd><dl class="method">
+<dd><p>Primary class container for CSRF validation logic. The main function of 
+this extension is to generate and validate CSRF tokens. The design and 
+implementation of this extension is influenced by Django&#8217;s CSRF middleware.</p>
+<p>Tokens are generated using a salted SHA1 hash. The salt is based off your 
+application&#8217;s <cite>SECRET_KEY</cite> setting and a random range.</p>
+<p>You might intialize <a class="reference internal" href="#flaskext.seasurf.SeaSurf" title="flaskext.seasurf.SeaSurf"><tt class="xref py py-class docutils literal"><span class="pre">SeaSurf</span></tt></a> something like this:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">csrf</span> <span class="o">=</span> <span class="n">SeaSurf</span><span class="p">(</span><span class="n">app</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Validation will now be active for all requests whose methods are not GET, 
+HEAD, OPTIONS, or TRACE.</p>
+<p>When using other request methods, such as POST for instance, you will need 
+to provide the CSRF token as a parameter. This can be achieved by making 
+use of the Jinja global. In your template:</p>
+<div class="highlight-python"><pre>&lt;form method="POST"&gt;
+...
+&lt;input type="hidden" name="_csrf_token" value="{{ csrf_token }}"&gt;
+&lt;/form&gt;</pre>
+</div>
+<p>This will assign a token to both the session cookie and the rendered HTML 
+which will then be validated on the backend. POST requests missing this 
+field will fail unless the header X-CSRFToken is specified.</p>
+<div class="admonition-excluding-views-from-validation admonition">
+<p class="first admonition-title">Excluding Views From Validation</p>
+<p class="last">For views that use methods which may be validated but for which you 
+wish to not run validation on you may make use of the <a class="reference internal" href="#flaskext.seasurf.SeaSurf.exempt" title="flaskext.seasurf.SeaSurf.exempt"><tt class="xref py py-class docutils literal"><span class="pre">exempt</span></tt></a> 
+decorator to indicate that they should not be checked.</p>
+</div>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><strong>app</strong> &#8211; The Flask application object, defaults to None.</td>
+</tr>
+</tbody>
+</table>
+<dl class="method">
 <dt id="flaskext.seasurf.SeaSurf.exempt">
 <tt class="descname">exempt</tt><big>(</big><em>view</em><big>)</big><a class="reference internal" href="_modules/flaskext/seasurf.html#SeaSurf.exempt"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#flaskext.seasurf.SeaSurf.exempt" title="Permalink to this definition">¶</a></dt>
-<dd><p>A decorator that can be used to exempt a view from CSRF validation.</p>
-<p>Example usage usage might look something like this:</p>
-<blockquote>
-<div><p>csrf = SeaSurf(app)</p>
-<p>&#64;xsrf.exempt
-&#64;app.route(&#8216;/some_view&#8217;)
-def some_view():</p>
-<blockquote>
-<div>&#8220;&#8221;&#8220;This view is exempt from CSRF validation.&#8217;
-return render_template(&#8216;some_view.html&#8217;)</div></blockquote>
-</div></blockquote>
+<dd><p>A decorator that can be used to exclude a view from CSRF validation.</p>
+<p>Example usage of <a class="reference internal" href="#flaskext.seasurf.SeaSurf.exempt" title="flaskext.seasurf.SeaSurf.exempt"><tt class="xref py py-class docutils literal"><span class="pre">exempt</span></tt></a> might look something like this:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">csrf</span> <span class="o">=</span> <span class="n">SeaSurf</span><span class="p">(</span><span class="n">app</span><span class="p">)</span>
+
+<span class="nd">@csrf.exempt</span>
+<span class="nd">@app.route</span><span class="p">(</span><span class="s">&#39;/some_view&#39;</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">some_view</span><span class="p">():</span>
+    <span class="sd">&quot;&quot;&quot;This view is exempt from CSRF validation.&quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">render_template</span><span class="p">(</span><span class="s">&#39;some_view.html&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><strong>view</strong> &#8211; The view to be wrapped by the decorator.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="flaskext.seasurf.SeaSurf.init_app">
+<tt class="descname">init_app</tt><big>(</big><em>app</em><big>)</big><a class="reference internal" href="_modules/flaskext/seasurf.html#SeaSurf.init_app"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#flaskext.seasurf.SeaSurf.init_app" title="Permalink to this definition">¶</a></dt>
+<dd><p>Initializes a Flask object <cite>app</cite>, binds CSRF validation to 
+app.before_request, and assigns <cite>csrf_token</cite> as a Jinja global.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><strong>app</strong> &#8211; The Flask application object.</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 </dd></dl>
