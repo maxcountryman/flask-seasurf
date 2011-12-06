@@ -95,6 +95,7 @@ class SeaSurf(object):
     
     _exempt_views = []
     _secret_key = None
+    _testing = False
     
     def __init__(self, app=None): 
         if app is not None:
@@ -107,19 +108,11 @@ class SeaSurf(object):
         :param app: The Flask application object.
         '''
         
-        self._secret_key = app.config.get('SECRET_KEY', '')
-        
         # expose the CSRF token generation to the template
         app.jinja_env.globals['csrf_token'] = self._set_token
         
-        testing = app.config.get('TESTING', False)
-        
-        # The following is a bad hack but for some odd reason, while testing, 
-        # Flask is setting _got_first_request to True albeit before any actual 
-        # requests are being made. For now this is a stand in until I can 
-        # figure out what's going on
-        if testing and app._got_first_request:
-            app._got_first_request = False
+        self._secret_key = app.config.get('SECRET_KEY', '')
+        self._testing = app.config.get('TESTING', False)
         
         @app.before_request
         def validate_integrity():
@@ -134,7 +127,7 @@ class SeaSurf(object):
             configuration.
             '''
             
-            if testing:
+            if self._testing:
                 return # don't validate for testing
             
             if request.method not in ('GET', 'HEAD', 'OPTIONS', 'TRACE'):
