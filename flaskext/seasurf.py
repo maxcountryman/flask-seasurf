@@ -95,14 +95,9 @@ class SeaSurf(object):
     
     _exempt_views = []
     _secret_key = None
-    _testing = None
     
     def __init__(self, app=None): 
         if app is not None:
-            if self._secret_key is None:
-                self._secret_key = app.config.get('SECRET_KEY')
-            if self._testing is None:
-                self._testing = app.config.get('TESTING', False)
             self.init_app(app)
     
     def init_app(self, app):
@@ -112,8 +107,19 @@ class SeaSurf(object):
         :param app: The Flask application object.
         '''
         
-        if self._testing:
-                return # don't validate for testing
+        self._secret_key = app.config.get('SECRET_KEY', '')
+        
+        # expose the CSRF token generation to the template
+        app.jinja_env.globals['csrf_token'] = self._set_token
+        
+        testing = app.config.get('TESTING', False)
+        
+        # The following is a bad hack but for some odd reason, while testing, 
+        # Flask is setting _got_first_request to True albeit before any actual 
+        # requests are being made. For now this is a stand in until I can 
+        # figure out what's going on
+        if testing and app._got_first_request:
+            app._got_first_request = False
         
         @app.before_request
         def validate_integrity():
@@ -127,6 +133,9 @@ class SeaSurf(object):
             Validation is suspended if `TESTING` is True in your application's 
             configuration.
             '''
+            
+            if testing:
+                return # don't validate for testing
             
             if request.method not in ('GET', 'HEAD', 'OPTIONS', 'TRACE'):
                 
@@ -159,9 +168,6 @@ class SeaSurf(object):
                 error = (REASON_BAD_TOKEN, request.path)
                 app.logger.warning('Forbidden ({}): {}'.format(*error))
                 return abort(403)
-        
-        # expose the CSRF token generation to the template
-        app.jinja_env.globals['csrf_token'] = self._set_token
     
     def exempt(self, view):
         '''A decorator that can be used to exclude a view from CSRF validation.
