@@ -112,6 +112,9 @@ class SeaSurf(object):
         :param app: The Flask application object.
         '''
         
+        if self._testing:
+                return # don't validate for testing
+        
         @app.before_request
         def validate_integrity():
             '''Determine if a view is exempt from CSRF validation and if not 
@@ -126,8 +129,6 @@ class SeaSurf(object):
             '''
             
             if request.method not in ('GET', 'HEAD', 'OPTIONS', 'TRACE'):
-                if self._testing:
-                    return # don't validate for testing
                 
                 if request.endpoint in self._exempt_views:
                     return
