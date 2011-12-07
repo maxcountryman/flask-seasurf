@@ -149,18 +149,18 @@ class SeaSurf(object):
                         app.logger.warning('Forbidden ({}): {}'.format(*error))
                         return abort(403)
                             
-            csrf_token = session.pop('_csrf_token', '')
-            request_csrf_token = ''
-            if request.method == 'POST':
-                request_csrf_token = request.form.get('_csrf_token', '')
-            
-            if request_csrf_token == '':
-                request_csrf_token = request.headers.get('HTTP_X_CSRFTOKEN', '')
-            
-            if not _constant_time_compare(request_csrf_token, csrf_token):
-                error = (REASON_BAD_TOKEN, request.path)
-                app.logger.warning('Forbidden ({}): {}'.format(*error))
-                return abort(403)
+                csrf_token = session.pop('_csrf_token', '')
+                request_csrf_token = ''
+                if request.method == 'POST':
+                    request_csrf_token = request.form.get('_csrf_token', '')
+                
+                if request_csrf_token == '':
+                    request_csrf_token = request.headers.get('HTTP_X_CSRFTOKEN', '')
+                
+                if not _constant_time_compare(request_csrf_token, csrf_token):
+                    error = (REASON_BAD_TOKEN, request.path)
+                    app.logger.warning('Forbidden ({}): {}'.format(*error))
+                    return abort(403)
     
     def exempt(self, view):
         '''A decorator that can be used to exclude a view from CSRF validation.
