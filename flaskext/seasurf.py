@@ -11,6 +11,8 @@
 
 from __future__ import absolute_import
 
+__version__ = '0.1.8'
+
 import hashlib
 import random
 import urlparse
@@ -50,6 +52,8 @@ def _same_origin(url1, url2):
 
 def _constant_time_compare(val1, val2):
     '''Compare two values in constant time.'''
+    if val1 is None or val2 is None:
+        return False
     if len(val1) != len(val2):
         return False
     result = 0
@@ -95,8 +99,6 @@ class SeaSurf(object):
     :param app: The Flask application object, defaults to None.
     '''
     
-    _exempt_views = []
-    
     def __init__(self, app=None): 
         if app is not None:
             self.init_app(app)
@@ -108,17 +110,19 @@ class SeaSurf(object):
         :param app: The Flask application object.
         '''
         
-        # expose the CSRF token generation to the template
-        app.jinja_env.globals['csrf_token'] = self._set_token
+        self.app = app
+        app.before_request(self._before_request)
+        app.after_request(self._after_request)
+        
+        # expose the CSRF token to the template
+        app.jinja_env.globals['csrf_token'] = self._get_token
         
         self._secret_key = app.config.get('SECRET_KEY', '')
+        self._exempt_views = set()
         self._csrf_disable = app.config.get('CSRF_DISABLE', 
                                             app.config.get('TESTING', False))
         self._csrf_timeout = app.config.get('CSRF_COOKIE_TIMEOUT', 
-                                           timedelta(days=5))
-        
-        app.before_request(self._before_request)
-        app.after_request(self._after_request)
+                                            timedelta(days=5))
     
     def exempt(self, view):
         '''A decorator that can be used to exclude a view from CSRF validation.
@@ -136,7 +140,7 @@ class SeaSurf(object):
         :param view: The view to be wrapped by the decorator.
         '''
         
-        self._exempt_views.append(view)
+        self._exempt_views.add(view)
         return view
     
     def _before_request(self):
@@ -155,9 +159,17 @@ class SeaSurf(object):
         if self._csrf_disable:
             return # don't validate for testing
         
+        csrf_token = request.cookies.get('_csrf_token', None)
+        if not csrf_token:
+            session['_csrf_token'] = self._generate_token()
+        else:
+            session['_csrf_token'] = csrf_token
+        
         if request.method not in ('GET', 'HEAD', 'OPTIONS', 'TRACE'):
-            
-            if request.endpoint in self._exempt_views:
+            # Retrieve the view function based on the request endpoint and 
+            # then compare it to the set of exempted views
+            view_func = self.app.view_functions.get(request.endpoint)
+            if view_func in self._exempt_views:
                 return
             
             if request.is_secure:
@@ -173,14 +185,11 @@ class SeaSurf(object):
                     error = (error, request.path)
                     self.app.logger.warning('Forbidden ({}): {}'.format(*error))
                     return abort(403)
-                        
-            csrf_token = request.cookies.get('_csrf_token', '')
             
-            request_csrf_token = ''
-            if request.method == 'POST':
-                request_csrf_token = request.form.get('_csrf_token', '')
-            
+            request_csrf_token = request.form.get('_csrf_token', '')
             if request_csrf_token == '':
+                # As per the Django middleware, this makes AJAX easier and 
+                # PUT and DELETE possible
                 request_csrf_token = request.headers.get('HTTP_X_CSRFTOKEN', '')
             
             if not _constant_time_compare(request_csrf_token, csrf_token):
@@ -193,7 +202,10 @@ class SeaSurf(object):
         the response. If not then we set a cookie on the response and return 
         the response. Bound to the Flask `after_request` decorator.'''
         
-        if not hasattr(session, '_csrf_token'):
+        if session.get('_csrf_token') is None:
+            return response
+        
+        if not session.get('_csrf_used', False):
             return response
         
         response.set_cookie('_csrf_token', 
@@ -202,16 +214,14 @@ class SeaSurf(object):
         response.vary.add('Cookie')
         return response
     
+    def _get_token(self):
+        '''Gets a token from the request cookies and sets `_csrf_used` to True.'''
+        session['_csrf_used'] = True
+        return session.get('_csrf_token', None)
+    
     def _generate_token(self):
         '''Generates a token with randomly salted SHA1. Returns a string.'''
         salt = (randrange(0, _MAX_CSRF_KEY), self._secret_key)
         return str(hashlib.sha1('{}{}'.format(*salt)).hexdigest())
-    
-    def _set_token(self):
-        '''Sets a token on the session cookie object.'''
-        csrf_token = self._generate_token()
-        if '_csrf_token' not in session:
-            session['_csrf_token'] = csrf_token
-        return session['_csrf_token']
 
 
