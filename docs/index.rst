@@ -1,18 +1,20 @@
 Flask-SeaSurf
-============
+=============
 
 .. module:: flaskext.seasurf
 
-SeaSurf is a Flask extension for preventing cross-site request forgery. CSRF 
-vulnerabilities have been found in large and popular sites such as YouTube.
-These attacks are problematic because the mechanism they use is relatively 
-easy to exploit. This extension attempts to aid you in securing your
-application from such attacks.
+SeaSurf is a Flask extension for preventing cross-site request forgery (CSRF). 
+
+CSRF vulnerabilities have been found in large and popular sites such as 
+YouTube. These attacks are problematic because the mechanism they use is 
+relatively easy to exploit. This extension attempts to aid you in securing 
+your application from such attacks.
 
 This extension is based on the excellent Django middleware.
 
 .. _seasurf: http://github.com/maxcountryman/flask-seasurf
 .. _Flask: http://flask.pocoo.org/
+
 
 Installation
 ------------
@@ -24,14 +26,34 @@ or alternatively if you have pip installed::
 
     $ pip install flask-seasurf
 
+
 Usage
 -----
 
 Using SeaSurf is fairly straightforward. Begin by importing the extension and 
 then passing your application object back to the extension, like this:
 
+.. code-block:: python
+    
+    import Flask
     from flaskext.seasurf import SeaSurf
+    
+    app = Flask(__name__)
     csrf = SeaSurf(app)
+
+By default all requests that are not `GET`, `HEAD`, `OPTIONS`, or `TRACE` are
+validated against the CSRF token sent by the client and as rendered on the
+page. However a view may be completely exempted from validation using the
+exempt decorator. For instance it's possible to decorate a view as shown below:
+
+.. code-block:: python
+    
+    @csrf.exempt
+    @app.route('/exempt_view', methods=['POST'])
+    def exempt_view():
+        '''This view is exempted from CSRF validation.'''
+        return 'foobar'
+
 
 API
 ---

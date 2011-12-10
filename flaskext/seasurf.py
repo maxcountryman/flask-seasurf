@@ -15,6 +15,8 @@ import hashlib
 import random
 import urlparse
 
+from datetime import timedelta
+
 from flask import session, request, abort
 
 if hasattr(random, 'SystemRandom'):
@@ -94,8 +96,6 @@ class SeaSurf(object):
     '''
     
     _exempt_views = []
-    _secret_key = None
-    _testing = False
     
     def __init__(self, app=None): 
         if app is not None:
@@ -112,55 +112,13 @@ class SeaSurf(object):
         app.jinja_env.globals['csrf_token'] = self._set_token
         
         self._secret_key = app.config.get('SECRET_KEY', '')
-        self._testing = app.config.get('TESTING', False)
+        self._csrf_disable = app.config.get('CSRF_DISABLE', 
+                                            app.config.get('TESTING', False))
+        self._csrf_timeout = app.config.get('CSRF_COOKIE_TIMEOUT', 
+                                           timedelta(days=5))
         
-        @app.before_request
-        def validate_integrity():
-            '''Determine if a view is exempt from CSRF validation and if not 
-            then ensure the validity of the CSRF token.
-            
-            If a request is determined to be secure, i.e. using HTTPS, then we 
-            use strict referer checking to prevent a man-in-the-middle attack 
-            from being plausible.
-            
-            Validation is suspended if `TESTING` is True in your application's 
-            configuration.
-            '''
-            
-            if self._testing:
-                return # don't validate for testing
-            
-            if request.method not in ('GET', 'HEAD', 'OPTIONS', 'TRACE'):
-                
-                if request.endpoint in self._exempt_views:
-                    return
-                
-                if request.is_secure:
-                    referer = request.headers.get('HTTP_REFERER')
-                    if referer is None:
-                        error = (REASON_NO_REFERER, request.path)
-                        app.logger.warning('Forbidden ({}): {}'.format(*error))
-                        return abort(403)
-                    
-                    allowed_referer = request.url_root
-                    if not _same_origin(referer, allowed_referer):
-                        error = REASON_BAD_REFERER.format(referer, allowed_referer)
-                        error = (error, request.path)
-                        app.logger.warning('Forbidden ({}): {}'.format(*error))
-                        return abort(403)
-                            
-                csrf_token = session.pop('_csrf_token', '')
-                request_csrf_token = ''
-                if request.method == 'POST':
-                    request_csrf_token = request.form.get('_csrf_token', '')
-                
-                if request_csrf_token == '':
-                    request_csrf_token = request.headers.get('HTTP_X_CSRFTOKEN', '')
-                
-                if not _constant_time_compare(request_csrf_token, csrf_token):
-                    error = (REASON_BAD_TOKEN, request.path)
-                    app.logger.warning('Forbidden ({}): {}'.format(*error))
-                    return abort(403)
+        app.before_request(self._before_request)
+        app.after_request(self._after_request)
     
     def exempt(self, view):
         '''A decorator that can be used to exclude a view from CSRF validation.
@@ -177,8 +135,72 @@ class SeaSurf(object):
         
         :param view: The view to be wrapped by the decorator.
         '''
+        
         self._exempt_views.append(view)
         return view
+    
+    def _before_request(self):
+        '''Determine if a view is exempt from CSRF validation and if not 
+        then ensure the validity of the CSRF token. This method is bound to 
+        the Flask `before_request` decorator.
+        
+        If a request is determined to be secure, i.e. using HTTPS, then we 
+        use strict referer checking to prevent a man-in-the-middle attack 
+        from being plausible.
+        
+        Validation is suspended if `TESTING` is True in your application's 
+        configuration.
+        '''
+        
+        if self._csrf_disable:
+            return # don't validate for testing
+        
+        if request.method not in ('GET', 'HEAD', 'OPTIONS', 'TRACE'):
+            
+            if request.endpoint in self._exempt_views:
+                return
+            
+            if request.is_secure:
+                referer = request.headers.get('HTTP_REFERER')
+                if referer is None:
+                    error = (REASON_NO_REFERER, request.path)
+                    self.app.logger.warning('Forbidden ({}): {}'.format(*error))
+                    return abort(403)
+                
+                allowed_referer = request.url_root
+                if not _same_origin(referer, allowed_referer):
+                    error = REASON_BAD_REFERER.format(referer, allowed_referer)
+                    error = (error, request.path)
+                    self.app.logger.warning('Forbidden ({}): {}'.format(*error))
+                    return abort(403)
+                        
+            csrf_token = request.cookies.get('_csrf_token', '')
+            
+            request_csrf_token = ''
+            if request.method == 'POST':
+                request_csrf_token = request.form.get('_csrf_token', '')
+            
+            if request_csrf_token == '':
+                request_csrf_token = request.headers.get('HTTP_X_CSRFTOKEN', '')
+            
+            if not _constant_time_compare(request_csrf_token, csrf_token):
+                error = (REASON_BAD_TOKEN, request.path)
+                self.app.logger.warning('Forbidden ({}): {}'.format(*error))
+                return abort(403)
+    
+    def _after_request(self, response):
+        '''Checks if a request session contains the CSRF token. If so, returns 
+        the response. If not then we set a cookie on the response and return 
+        the response. Bound to the Flask `after_request` decorator.'''
+        
+        if not hasattr(session, '_csrf_token'):
+            return response
+        
+        response.set_cookie('_csrf_token', 
+                            session['_csrf_token'], 
+                            max_age=self._csrf_timeout)
+        response.vary.add('Cookie')
+        return response
     
     def _generate_token(self):
         '''Generates a token with randomly salted SHA1. Returns a string.'''

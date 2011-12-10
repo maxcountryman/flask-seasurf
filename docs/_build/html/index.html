@@ -6,13 +6,13 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>Flask-SeaSurf &mdash; SeaSurf v0.1 documentation</title>
+    <title>Flask-SeaSurf &mdash; SeaSurf v0.1.6 documentation</title>
     <link rel="stylesheet" href="_static/flasky.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    '',
-        VERSION:     '0.1',
+        VERSION:     '0.1.6',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true
@@ -21,7 +21,7 @@
     <script type="text/javascript" src="_static/jquery.js"></script>
     <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
-    <link rel="top" title="SeaSurf v0.1 documentation" href="#" /> 
+    <link rel="top" title="SeaSurf v0.1.6 documentation" href="#" /> 
   </head>
   <body>
   
@@ -35,13 +35,13 @@
         <div class="bodywrapper">
           <div class="body">
             
-  <div class="section" id="flask-seasurf">
-<h1>Flask-SeaSurf<a class="headerlink" href="#flask-seasurf" title="Permalink to this headline">¶</a></h1>
-<span class="target" id="module-flaskext.seasurf"></span><p>SeaSurf is a Flask extension for preventing cross-site request forgery. CSRF
-vulnerabilities have been found in large and popular sites such as YouTube.
-These attacks are problematic because the mechanism they use is relatively
-easy to exploit. This extension attempts to aid you in securing your
-application from such attacks.</p>
+  <div class="section" id="module-flaskext.seasurf">
+<span id="flask-seasurf"></span><h1>Flask-SeaSurf<a class="headerlink" href="#module-flaskext.seasurf" title="Permalink to this headline">¶</a></h1>
+<p>SeaSurf is a Flask extension for preventing cross-site request forgery (CSRF).</p>
+<p>CSRF vulnerabilities have been found in large and popular sites such as
+YouTube. These attacks are problematic because the mechanism they use is
+relatively easy to exploit. This extension attempts to aid you in securing
+your application from such attacks.</p>
 <p>This extension is based on the excellent Django middleware.</p>
 <div class="section" id="installation">
 <h2>Installation<a class="headerlink" href="#installation" title="Permalink to this headline">¶</a></h2>
@@ -56,15 +56,30 @@ application from such attacks.</p>
 <h2>Usage<a class="headerlink" href="#usage" title="Permalink to this headline">¶</a></h2>
 <p>Using SeaSurf is fairly straightforward. Begin by importing the extension and
 then passing your application object back to the extension, like this:</p>
-<blockquote>
-<div>from flaskext.seasurf import SeaSurf
-csrf = SeaSurf(app)</div></blockquote>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">import</span> <span class="nn">Flask</span>
+<span class="kn">from</span> <span class="nn">flaskext.seasurf</span> <span class="kn">import</span> <span class="n">SeaSurf</span>
+
+<span class="n">app</span> <span class="o">=</span> <span class="n">Flask</span><span class="p">(</span><span class="n">__name__</span><span class="p">)</span>
+<span class="n">csrf</span> <span class="o">=</span> <span class="n">SeaSurf</span><span class="p">(</span><span class="n">app</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>By default all requests that are not <cite>GET</cite>, <cite>HEAD</cite>, <cite>OPTIONS</cite>, or <cite>TRACE</cite> are
+validated against the CSRF token sent by the client and as rendered on the
+page. However a view may be completely exempted from validation using the
+exempt decorator. For instance it&#8217;s possible to decorate a view as shown below:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="nd">@csrf.exempt</span>
+<span class="nd">@app.route</span><span class="p">(</span><span class="s">&#39;/exempt_view&#39;</span><span class="p">,</span> <span class="n">methods</span><span class="o">=</span><span class="p">[</span><span class="s">&#39;POST&#39;</span><span class="p">])</span>
+<span class="k">def</span> <span class="nf">exempt_view</span><span class="p">():</span>
+    <span class="sd">&#39;&#39;&#39;This view is exempted from CSRF validation.&#39;&#39;&#39;</span>
+    <span class="k">return</span> <span class="s">&#39;foobar&#39;</span>
+</pre></div>
+</div>
 </div>
 <div class="section" id="api">
 <h2>API<a class="headerlink" href="#api" title="Permalink to this headline">¶</a></h2>
 <dl class="class">
 <dt id="flaskext.seasurf.SeaSurf">
-<em class="property">class </em><tt class="descclassname">flaskext.seasurf.</tt><tt class="descname">SeaSurf</tt><big>(</big><em>app=None</em><big>)</big><a class="reference internal" href="_modules/flaskext/seasurf.html#SeaSurf"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#flaskext.seasurf.SeaSurf" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><tt class="descclassname">flaskext.seasurf.</tt><tt class="descname">SeaSurf</tt><big>(</big><em>app=None</em><big>)</big><a class="headerlink" href="#flaskext.seasurf.SeaSurf" title="Permalink to this definition">¶</a></dt>
 <dd><p>Primary class container for CSRF validation logic. The main function of 
 this extension is to generate and validate CSRF tokens. The design and 
 implementation of this extension is influenced by Django&#8217;s CSRF middleware.</p>
@@ -103,7 +118,7 @@ decorator to indicate that they should not be checked.</p>
 </table>
 <dl class="method">
 <dt id="flaskext.seasurf.SeaSurf.exempt">
-<tt class="descname">exempt</tt><big>(</big><em>view</em><big>)</big><a class="reference internal" href="_modules/flaskext/seasurf.html#SeaSurf.exempt"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#flaskext.seasurf.SeaSurf.exempt" title="Permalink to this definition">¶</a></dt>
+<tt class="descname">exempt</tt><big>(</big><em>view</em><big>)</big><a class="headerlink" href="#flaskext.seasurf.SeaSurf.exempt" title="Permalink to this definition">¶</a></dt>
 <dd><p>A decorator that can be used to exclude a view from CSRF validation.</p>
 <p>Example usage of <a class="reference internal" href="#flaskext.seasurf.SeaSurf.exempt" title="flaskext.seasurf.SeaSurf.exempt"><tt class="xref py py-class docutils literal"><span class="pre">exempt</span></tt></a> might look something like this:</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="n">csrf</span> <span class="o">=</span> <span class="n">SeaSurf</span><span class="p">(</span><span class="n">app</span><span class="p">)</span>
@@ -127,7 +142,7 @@ decorator to indicate that they should not be checked.</p>
 
 <dl class="method">
 <dt id="flaskext.seasurf.SeaSurf.init_app">
-<tt class="descname">init_app</tt><big>(</big><em>app</em><big>)</big><a class="reference internal" href="_modules/flaskext/seasurf.html#SeaSurf.init_app"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#flaskext.seasurf.SeaSurf.init_app" title="Permalink to this definition">¶</a></dt>
+<tt class="descname">init_app</tt><big>(</big><em>app</em><big>)</big><a class="headerlink" href="#flaskext.seasurf.SeaSurf.init_app" title="Permalink to this definition">¶</a></dt>
 <dd><p>Initializes a Flask object <cite>app</cite>, binds CSRF validation to 
 app.before_request, and assigns <cite>csrf_token</cite> as a Jinja global.</p>
 <table class="docutils field-list" frame="void" rules="none">
