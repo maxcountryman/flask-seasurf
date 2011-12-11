@@ -11,7 +11,7 @@
 
 from __future__ import absolute_import
 
-__version__ = '0.1.9'
+__version__ = '0.1.10'
 
 import hashlib
 import random
@@ -83,7 +83,7 @@ class SeaSurf(object):
         
         <form method="POST">
         ...
-        <input type="hidden" name="_csrf_token" value="{{ csrf_token }}">
+        <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
         </form>
     
     This will assign a token to both the session cookie and the rendered HTML 

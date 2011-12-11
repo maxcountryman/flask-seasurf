@@ -6,13 +6,13 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>Flask-SeaSurf &mdash; SeaSurf v0.1.6 documentation</title>
+    <title>Flask-SeaSurf &mdash; SeaSurf v0.1.10 documentation</title>
     <link rel="stylesheet" href="_static/flasky.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    '',
-        VERSION:     '0.1.6',
+        VERSION:     '0.1.10',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true
@@ -21,7 +21,7 @@
     <script type="text/javascript" src="_static/jquery.js"></script>
     <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
-    <link rel="top" title="SeaSurf v0.1.6 documentation" href="#" /> 
+    <link rel="top" title="SeaSurf v0.1.10 documentation" href="#" /> 
   </head>
   <body>
   
@@ -63,6 +63,22 @@ then passing your application object back to the extension, like this:</p>
 <span class="n">csrf</span> <span class="o">=</span> <span class="n">SeaSurf</span><span class="p">(</span><span class="n">app</span><span class="p">)</span>
 </pre></div>
 </div>
+<p>This extension is configurable via a set of configuration variables which can
+we added to the Flask app&#8217;s config file. The cookie name, cookie timeout, and
+CSRF disabled parameters may be set via <cite>CSRF_COOKIE_NAME</cite>,
+<cite>CSRF_COOKIE_TIMEOUT</cite>, and <cite>CSRF_DISABLED</cite>, respectively.</p>
+<p>Corrosponding code will need to be added to the templates where <cite>POST</cite>, <cite>PUT</cite>,
+and <cite>DELETE</cite> HTTP methods are anticipated. In the case of <cite>POST</cite> requests
+a hidden field should be added, something like this:</p>
+<div class="highlight-html"><div class="highlight"><pre><span class="nt">&lt;form</span> <span class="na">method=</span><span class="s">&quot;POST&quot;</span><span class="nt">&gt;</span>
+    ...
+    <span class="nt">&lt;input</span> <span class="na">type=</span><span class="s">&quot;hidden&quot;</span> <span class="na">name=</span><span class="s">&quot;_csrf_token&quot;</span> <span class="na">value=</span><span class="s">&quot;{{ csrf_token() }}&quot;</span><span class="nt">&gt;</span>
+<span class="nt">&lt;/form&gt;</span>
+</pre></div>
+</div>
+<p>The extension adds a global function to the Jinja template engine called
+<cite>csrf_token</cite>. This is a function that retrieves the current token and will be
+matched against the request token.</p>
 <p>By default all requests that are not <cite>GET</cite>, <cite>HEAD</cite>, <cite>OPTIONS</cite>, or <cite>TRACE</cite> are
 validated against the CSRF token sent by the client and as rendered on the
 page. However a view may be completely exempted from validation using the
@@ -74,6 +90,17 @@ exempt decorator. For instance it&#8217;s possible to decorate a view as shown b
     <span class="k">return</span> <span class="s">&#39;foobar&#39;</span>
 </pre></div>
 </div>
+</div>
+<div class="section" id="ajax-usage">
+<h2>AJAX Usage<a class="headerlink" href="#ajax-usage" title="Permalink to this headline">¶</a></h2>
+<p>AJAX is not exempted from CSRF validation as it is a plausible vector for
+cross-site request forgery. As such, POSTing with AJAX can make use of the
+aforementioned method, but other HTTP methods, such as <cite>PUT</cite> and <cite>DELETE</cite> might
+be better suited to using the <cite>X-CSRFToken</cite> header instead.</p>
+<p>Essentially this header is passed back to the backend by way of extrating the
+token from the cookie using JavaScript. For a better explanation of how this
+might be done please refer to the <a href="#id1"><span class="problematic" id="id2">`Django CSRF documentation &lt;https://docs.djangoproject.com/en/dev/ref/contrib/csrf/#ajax
+&gt;`_</span></a>.</p>
 </div>
 <div class="section" id="api">
 <h2>API<a class="headerlink" href="#api" title="Permalink to this headline">¶</a></h2>

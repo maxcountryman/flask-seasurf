@@ -54,7 +54,7 @@ a hidden field should be added, something like this:
 
     <form method="POST">
         ...
-        <input type="hidden" name="_csrf_token" value="{{ csrf_token }}">
+        <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
     </form>
 
 The extension adds a global function to the Jinja template engine called
