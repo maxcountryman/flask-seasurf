@@ -11,7 +11,7 @@
 
 from __future__ import absolute_import
 
-__version__ = '0.1.8'
+__version__ = '0.1.9'
 
 import hashlib
 import random
@@ -119,6 +119,7 @@ class SeaSurf(object):
         
         self._secret_key = app.config.get('SECRET_KEY', '')
         self._exempt_views = set()
+        self._csrf_name = app.config.get('CSRF_COOKIE_NAME', '_csrf_token')
         self._csrf_disable = app.config.get('CSRF_DISABLE', 
                                             app.config.get('TESTING', False))
         self._csrf_timeout = app.config.get('CSRF_COOKIE_TIMEOUT', 
@@ -159,11 +160,11 @@ class SeaSurf(object):
         if self._csrf_disable:
             return # don't validate for testing
         
-        csrf_token = request.cookies.get('_csrf_token', None)
+        csrf_token = request.cookies.get(self._csrf_name, None)
         if not csrf_token:
-            session['_csrf_token'] = self._generate_token()
+            session[self._csrf_name] = self._generate_token()
         else:
-            session['_csrf_token'] = csrf_token
+            session[self._csrf_name] = csrf_token
         
         if request.method not in ('GET', 'HEAD', 'OPTIONS', 'TRACE'):
             # Retrieve the view function based on the request endpoint and 
@@ -186,7 +187,7 @@ class SeaSurf(object):
                     self.app.logger.warning('Forbidden ({}): {}'.format(*error))
                     return abort(403)
             
-            request_csrf_token = request.form.get('_csrf_token', '')
+            request_csrf_token = request.form.get(self._csrf_name, '')
             if request_csrf_token == '':
                 # As per the Django middleware, this makes AJAX easier and 
                 # PUT and DELETE possible
@@ -202,22 +203,23 @@ class SeaSurf(object):
         the response. If not then we set a cookie on the response and return 
         the response. Bound to the Flask `after_request` decorator.'''
         
-        if session.get('_csrf_token') is None:
+        if session.get(self._csrf_name) is None:
             return response
         
         if not session.get('_csrf_used', False):
             return response
         
-        response.set_cookie('_csrf_token', 
-                            session['_csrf_token'], 
+        response.set_cookie(self._csrf_name, 
+                            session[self._csrf_name], 
                             max_age=self._csrf_timeout)
         response.vary.add('Cookie')
         return response
     
     def _get_token(self):
-        '''Gets a token from the request cookies and sets `_csrf_used` to True.'''
+        '''Attempts to get a token from the request cookies and sets 
+        `_csrf_used` to True.'''
         session['_csrf_used'] = True
-        return session.get('_csrf_token', None)
+        return session.get(self._csrf_name, None)
     
     def _generate_token(self):
         '''Generates a token with randomly salted SHA1. Returns a string.'''
