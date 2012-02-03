@@ -11,7 +11,7 @@
 
 from __future__ import absolute_import
 
-__version__ = '0.1.10'
+__version__ = '0.1.11'
 
 import hashlib
 import random
@@ -191,7 +191,7 @@ class SeaSurf(object):
             if request_csrf_token == '':
                 # As per the Django middleware, this makes AJAX easier and 
                 # PUT and DELETE possible
-                request_csrf_token = request.headers.get('HTTP_X_CSRFTOKEN', '')
+                request_csrf_token = request.headers.get('X-CSRFToken', '')
             
             if not _constant_time_compare(request_csrf_token, csrf_token):
                 error = (REASON_BAD_TOKEN, request.path)
