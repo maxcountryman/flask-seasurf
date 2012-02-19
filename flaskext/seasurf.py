@@ -11,7 +11,7 @@
 
 from __future__ import absolute_import
 
-__version__ = '0.1.11'
+__version__ = '0.1.12'
 
 import hashlib
 import random
@@ -177,14 +177,14 @@ class SeaSurf(object):
                 referer = request.headers.get('HTTP_REFERER')
                 if referer is None:
                     error = (REASON_NO_REFERER, request.path)
-                    self.app.logger.warning('Forbidden ({}): {}'.format(*error))
+                    self.app.logger.warning('Forbidden ({0}): {1}'.format(*error))
                     return abort(403)
                 
                 allowed_referer = request.url_root
                 if not _same_origin(referer, allowed_referer):
                     error = REASON_BAD_REFERER.format(referer, allowed_referer)
                     error = (error, request.path)
-                    self.app.logger.warning('Forbidden ({}): {}'.format(*error))
+                    self.app.logger.warning('Forbidden ({0}): {1}'.format(*error))
                     return abort(403)
             
             request_csrf_token = request.form.get(self._csrf_name, '')
@@ -195,7 +195,7 @@ class SeaSurf(object):
             
             if not _constant_time_compare(request_csrf_token, csrf_token):
                 error = (REASON_BAD_TOKEN, request.path)
-                self.app.logger.warning('Forbidden ({}): {}'.format(*error))
+                self.app.logger.warning('Forbidden ({0}): {1}'.format(*error))
                 return abort(403)
     
     def _after_request(self, response):
@@ -224,6 +224,6 @@ class SeaSurf(object):
     def _generate_token(self):
         '''Generates a token with randomly salted SHA1. Returns a string.'''
         salt = (randrange(0, _MAX_CSRF_KEY), self._secret_key)
-        return str(hashlib.sha1('{}{}'.format(*salt)).hexdigest())
+        return str(hashlib.sha1('{0}{1}'.format(*salt)).hexdigest())
 
 
