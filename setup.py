@@ -21,6 +21,7 @@ setup(
     zip_safe=False,
     platforms='any',
     install_requires=['Flask'],
+    test_suite='test_seasurf',
     classifiers=[
         'Development Status :: 4 - Beta',
         'Environment :: Web Environment',
