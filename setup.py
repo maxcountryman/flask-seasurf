@@ -3,6 +3,11 @@
     -------------
     
     An updated cross-site forgery protection extension for Flask.
+
+    Links
+    `````
+
+    * `documentation <http://packages.python.org/Flask-SeaSurf>`_
 '''
 
 from setuptools import setup
@@ -18,6 +23,7 @@ setup(
     long_description=__doc__,
     packages=['flaskext'],
     namespace_packages=['flaskext'],
+    test_suite='test_seasurf',
     zip_safe=False,
     platforms='any',
     install_requires=['Flask'],
