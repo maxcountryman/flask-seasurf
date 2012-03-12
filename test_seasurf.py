@@ -46,6 +46,13 @@ class SeaSurfTestCase(unittest.TestCase):
         rv = self.app.test_client().post('/bar')
         self.assertIn('403 Forbidden', rv.data)
 
+    # Methods for backwards compatibility with python 2.5 & 2.6
+    def assertIn(self, value, container):
+        self.assertTrue(value in container)
+
+    def assertIsNotNone(self, value):
+        self.assertNotEqual(value, None)
+
 
 if __name__ == '__main__':
     unittest.main()
