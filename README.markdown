@@ -14,11 +14,11 @@ This extension is based on the excellent Django middleware.
 
 ##Installation
 
-Install the extension with one of the following commands::
+Install the extension with one of the following commands:
 
     $ easy_install flask-seasurf
 
-or alternatively if you have pip installed::
+or alternatively if you have pip installed:
 
     $ pip install flask-seasurf
 
