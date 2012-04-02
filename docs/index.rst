@@ -85,8 +85,8 @@ be better suited to using the `X-CSRFToken` header instead.
 
 Essentially this header is passed back to the backend by way of extrating the
 token from the cookie using JavaScript. For a better explanation of how this
-might be done please refer to the `Django CSRF documentation <https://docs.djangoproject.com/en/dev/ref/contrib/csrf/#ajax
->`_. 
+might be done please refer to the `Django CSRF documentation
+<https://docs.djangoproject.com/en/dev/ref/contrib/csrf/#ajax>`_. 
 
 
 API
