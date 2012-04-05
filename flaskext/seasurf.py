@@ -119,11 +119,13 @@ class SeaSurf(object):
         
         self._secret_key = app.config.get('SECRET_KEY', '')
         self._exempt_views = set()
+        self._include_views = set()
         self._csrf_name = app.config.get('CSRF_COOKIE_NAME', '_csrf_token')
         self._csrf_disable = app.config.get('CSRF_DISABLE', 
                                             app.config.get('TESTING', False))
         self._csrf_timeout = app.config.get('CSRF_COOKIE_TIMEOUT', 
                                             timedelta(days=5))
+        self._type = app.config.get('SEASURF_INCLUDE_OR_EXEMPT_VIEWS', 'exempt')
     
     def exempt(self, view):
         '''A decorator that can be used to exclude a view from CSRF validation.
@@ -142,6 +144,25 @@ class SeaSurf(object):
         '''
         
         self._exempt_views.add(view)
+        return view
+
+    def include(self, view):
+        '''A decorator that can be used to include a view from CSRF validation.
+
+        Example usage of :class:`include` might look something like this:: 
+
+            csrf = SeaSurf(app)
+
+            @csrf.include
+            @app.route('/some_view')
+            def some_view():
+                """This view is include from CSRF validation."""
+                return render_template('some_view.html')
+
+        :param view: The view to be wrapped by the decorator.
+        '''
+
+        self._include_views.add(view)
         return view
     
     def _before_request(self):
@@ -170,8 +191,14 @@ class SeaSurf(object):
             # Retrieve the view function based on the request endpoint and 
             # then compare it to the set of exempted views
             view_func = self.app.view_functions.get(request.endpoint)
-            if view_func in self._exempt_views:
-                return
+            if self._type == 'exempt':
+                if view_func in self._exempt_views:
+                    return
+            elif self._type == 'include':
+                if view_func not in self._include_views:
+                    return
+            else:
+                raise NotImplementedError
             
             if request.is_secure:
                 referer = request.headers.get('HTTP_REFERER')
