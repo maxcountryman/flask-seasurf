@@ -28,7 +28,7 @@ or alternatively if you have pip installed:
 Using SeaSurf is fairly straightforward. Begin by importing the extension and 
 then passing your application object back to the extension, like this:
 
-    from flaskext.seasurf import SeaSurf
+    from flask_seasurf import SeaSurf
     csrf = SeaSurf(app)
 
 
