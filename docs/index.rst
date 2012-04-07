@@ -1,7 +1,7 @@
 Flask-SeaSurf
 =============
 
-.. module:: flaskext.seasurf
+.. module:: flask_seasurf
 
 SeaSurf is a Flask extension for preventing cross-site request forgery (CSRF). 
 
@@ -36,7 +36,7 @@ then passing your application object back to the extension, like this:
 .. code-block:: python
     
     import Flask
-    from flaskext.seasurf import SeaSurf
+    from flask_seasurf import SeaSurf
     
     app = Flask(__name__)
     csrf = SeaSurf(app)
@@ -91,6 +91,6 @@ might be done please refer to the `Django CSRF documentation
 
 API
 ---
-.. autoclass:: flaskext.seasurf.SeaSurf
+.. autoclass:: flask_seasurf.SeaSurf
     :members:
 
