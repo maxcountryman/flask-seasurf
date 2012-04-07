@@ -86,6 +86,9 @@ class SeaSurfTestCaseExemptViews(unittest.TestCase):
         rv = self.app.test_client().post('/bar')
         self.assertIn('403 Forbidden', rv.data)
 
+    def assertIn(self, value, container):
+        self.assertTrue(value in container)
+
 
 class SeaSurfTestCaseIncludeViews(unittest.TestCase):
 
@@ -118,6 +121,9 @@ class SeaSurfTestCaseIncludeViews(unittest.TestCase):
         # should produce a logger warning
         rv = self.app.test_client().post('/bar')
         self.assertIn('foo', rv.data)
+
+    def assertIn(self, value, container):
+        self.assertTrue(value in container)
 
 
 def suite():
