@@ -1,7 +1,7 @@
 import unittest
 
 from flask import Flask
-from flaskext.seasurf import SeaSurf
+from flask_seasurf import SeaSurf
 
 
 class SeaSurfTestCase(unittest.TestCase):
@@ -86,6 +86,7 @@ class SeaSurfTestCaseExemptViews(unittest.TestCase):
         rv = self.app.test_client().post('/bar')
         self.assertIn('403 Forbidden', rv.data)
 
+
 class SeaSurfTestCaseIncludeViews(unittest.TestCase):
 
     def setUp(self):
@@ -120,11 +121,11 @@ class SeaSurfTestCaseIncludeViews(unittest.TestCase):
 
 
 def suite():
-	suite = unittest.TestSuite()
-	suite.addTest(unittest.makeSuite(SeaSurfTestCase))
-	suite.addTest(unittest.makeSuite(SeaSurfTestCaseExemptViews))
-	suite.addTest(unittest.makeSuite(SeaSurfTestCaseIncludeViews))
-	return suite
+    suite = unittest.TestSuite()
+    suite.addTest(unittest.makeSuite(SeaSurfTestCase))
+    suite.addTest(unittest.makeSuite(SeaSurfTestCaseExemptViews))
+    suite.addTest(unittest.makeSuite(SeaSurfTestCaseIncludeViews))
+    return suite
 
 if __name__ == '__main__':
 
