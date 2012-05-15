@@ -36,7 +36,7 @@ then passing your application object back to the extension, like this:
 .. code-block:: python
     
     import Flask
-    from flask_seasurf import SeaSurf
+    from flask.ext.seasurf import SeaSurf
     
     app = Flask(__name__)
     csrf = SeaSurf(app)
