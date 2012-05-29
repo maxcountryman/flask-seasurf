@@ -21,7 +21,7 @@ setup(
     author_email='maxc@me.com',
     description='An updated CSRF extension for Flask.',
     long_description=__doc__,
-    py_modules=['flaskext'],
+    py_modules=['flask_seasurf'],
     test_suite='test_seasurf',
     zip_safe=False,
     platforms='any',
