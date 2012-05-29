@@ -100,6 +100,9 @@ class SeaSurf(object):
     '''
     
     def __init__(self, app=None): 
+        self._exempt_views = set()
+        self._include_views = set()
+
         if app is not None:
             self.init_app(app)
     
@@ -118,8 +121,6 @@ class SeaSurf(object):
         app.jinja_env.globals['csrf_token'] = self._get_token
         
         self._secret_key = app.config.get('SECRET_KEY', '')
-        self._exempt_views = set()
-        self._include_views = set()
         self._csrf_name = app.config.get('CSRF_COOKIE_NAME', '_csrf_token')
         self._csrf_disable = app.config.get('CSRF_DISABLE', 
                                             app.config.get('TESTING', False))
