@@ -1,7 +1,7 @@
 '''
     Flask-SeaSurf
     -------------
-    
+
     An updated cross-site forgery protection extension for Flask.
 
     Links
