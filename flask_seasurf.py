@@ -26,7 +26,7 @@ if hasattr(random, 'SystemRandom'):
 else:
     randrange = random.randrange
 
-_MAX_CSRF_KEY = 18446744073709551616L # 2 << 63
+_MAX_CSRF_KEY = 18446744073709551616L  # 2 << 63
 
 REASON_NO_REFERER = 'Referer checking failed: no referer.'
 REASON_BAD_REFERER = 'Referer checking failed: {} does not match {}.'
@@ -47,7 +47,7 @@ def xsrf(app):
 def _same_origin(url1, url2):
     '''Determine if two URLs share the same origin.'''
     p1, p2 = urlparse.urlparse(url1), urlparse.urlparse(url2)
-    return (p1.scheme, p1.hostname, p1.port) == (p2.scheme, p2.hostname, p2.port)
+    return p1.scheme, p1.hostname, p1.port == p2.scheme, p2.hostname, p2.port
 
 
 def _constant_time_compare(val1, val2):
@@ -126,7 +126,8 @@ class SeaSurf(object):
                                             app.config.get('TESTING', False))
         self._csrf_timeout = app.config.get('CSRF_COOKIE_TIMEOUT',
                                             timedelta(days=5))
-        self._type = app.config.get('SEASURF_INCLUDE_OR_EXEMPT_VIEWS', 'exempt')
+        self._type = app.config.get('SEASURF_INCLUDE_OR_EXEMPT_VIEWS',
+                                    'exempt')
 
     def exempt(self, view):
         '''A decorator that can be used to exclude a view from CSRF validation.
@@ -180,7 +181,7 @@ class SeaSurf(object):
         '''
 
         if self._csrf_disable:
-            return # don't validate for testing
+            return  # don't validate for testing
 
         csrf_token = request.cookies.get(self._csrf_name, None)
         if not csrf_token:
@@ -205,14 +206,14 @@ class SeaSurf(object):
                 referer = request.headers.get('HTTP_REFERER')
                 if referer is None:
                     error = (REASON_NO_REFERER, request.path)
-                    self.app.logger.warning('Forbidden (%s): %s'%error)
+                    self.app.logger.warning('Forbidden (%s): %s' % error)
                     return abort(403)
 
                 allowed_referer = request.url_root
                 if not _same_origin(referer, allowed_referer):
                     error = REASON_BAD_REFERER.format(referer, allowed_referer)
                     error = (error, request.path)
-                    self.app.logger.warning('Forbidden (%s): %s'%error)
+                    self.app.logger.warning('Forbidden (%s): %s' % error)
                     return abort(403)
 
             request_csrf_token = request.form.get(self._csrf_name, '')
@@ -223,7 +224,7 @@ class SeaSurf(object):
 
             if not _constant_time_compare(request_csrf_token, csrf_token):
                 error = (REASON_BAD_TOKEN, request.path)
-                self.app.logger.warning('Forbidden (%s): {%s}'%error)
+                self.app.logger.warning('Forbidden (%s): {%s}' % error)
                 return abort(403)
 
     def _after_request(self, response):
@@ -252,4 +253,4 @@ class SeaSurf(object):
     def _generate_token(self):
         '''Generates a token with randomly salted SHA1. Returns a string.'''
         salt = (randrange(0, _MAX_CSRF_KEY), self._secret_key)
-        return str(hashlib.sha1('%s%s'%salt).hexdigest())
+        return str(hashlib.sha1('%s%s' % salt).hexdigest())
