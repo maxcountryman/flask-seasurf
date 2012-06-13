@@ -1,3 +1,5 @@
+from __future__ import with_statement
+
 import unittest
 
 from flask import Flask
@@ -45,6 +47,34 @@ class SeaSurfTestCase(unittest.TestCase):
         # should produce a logger warning
         rv = self.app.test_client().post('/bar')
         self.assertIn('403 Forbidden', rv.data)
+
+    def test_https_bad_referer(self):
+        with self.app.test_client() as client:
+            token = self.csrf._generate_token()
+
+            client.set_cookie('www.example.com', self.csrf._csrf_name, token)
+
+            rv = client.post('/bar',
+                data={self.csrf._csrf_name: token},
+                base_url='https://www.example.com',
+                headers={'Referer': 'https://www.evil.com/foobar'}
+            )
+
+            self.assertEqual(403, rv.status_code)
+
+    def test_https_good_referer(self):
+        with self.app.test_client() as client:
+            token = self.csrf._generate_token()
+
+            client.set_cookie('www.example.com', self.csrf._csrf_name, token)
+
+            rv = client.post('/bar',
+                data={self.csrf._csrf_name: token},
+                base_url='https://www.example.com',
+                headers={'Referer': 'https://www.example.com/foobar'}
+            )
+
+            self.assertEqual(rv.status_code, 200)
 
     # Methods for backwards compatibility with python 2.5 & 2.6
     def assertIn(self, value, container):
