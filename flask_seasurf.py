@@ -47,7 +47,9 @@ def xsrf(app):
 def _same_origin(url1, url2):
     '''Determine if two URLs share the same origin.'''
     p1, p2 = urlparse.urlparse(url1), urlparse.urlparse(url2)
-    return p1.scheme, p1.hostname, p1.port == p2.scheme, p2.hostname, p2.port
+    origin1 = p1.scheme, p1.hostname, p1.port
+    origin2 = p2.scheme, p2.hostname, p2.port
+    return origin1 == origin2
 
 
 def _constant_time_compare(val1, val2):
@@ -203,7 +205,7 @@ class SeaSurf(object):
                 raise NotImplementedError
 
             if request.is_secure:
-                referer = request.headers.get('HTTP_REFERER')
+                referer = request.headers.get('Referer')
                 if referer is None:
                     error = (REASON_NO_REFERER, request.path)
                     self.app.logger.warning('Forbidden (%s): %s' % error)
