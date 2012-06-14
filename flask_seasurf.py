@@ -29,7 +29,7 @@ else:
 _MAX_CSRF_KEY = 18446744073709551616L  # 2 << 63
 
 REASON_NO_REFERER = 'Referer checking failed: no referer.'
-REASON_BAD_REFERER = 'Referer checking failed: {} does not match {}.'
+REASON_BAD_REFERER = 'Referer checking failed: %s does not match %s.'
 REASON_NO_CSRF_TOKEN = 'CSRF token not set.'
 REASON_BAD_TOKEN = 'CSRF token missing or incorrect.'
 
@@ -213,7 +213,7 @@ class SeaSurf(object):
 
                 allowed_referer = request.url_root
                 if not _same_origin(referer, allowed_referer):
-                    error = REASON_BAD_REFERER.format(referer, allowed_referer)
+                    error = REASON_BAD_REFERER % (referer, allowed_referer)
                     error = (error, request.path)
                     self.app.logger.warning('Forbidden (%s): %s' % error)
                     return abort(403)
@@ -226,7 +226,7 @@ class SeaSurf(object):
 
             if not _constant_time_compare(request_csrf_token, csrf_token):
                 error = (REASON_BAD_TOKEN, request.path)
-                self.app.logger.warning('Forbidden (%s): {%s}' % error)
+                self.app.logger.warning('Forbidden (%s): %s' % error)
                 return abort(403)
 
     def _after_request(self, response):
