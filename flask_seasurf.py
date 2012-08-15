@@ -19,7 +19,7 @@ import urlparse
 
 from datetime import timedelta
 
-from flask import session, request, abort
+from flask import g, request, abort
 
 if hasattr(random, 'SystemRandom'):
     randrange = random.SystemRandom().randrange
@@ -187,9 +187,9 @@ class SeaSurf(object):
 
         csrf_token = request.cookies.get(self._csrf_name, None)
         if not csrf_token:
-            session[self._csrf_name] = self._generate_token()
+            setattr(g, self._csrf_name, self._generate_token())
         else:
-            session[self._csrf_name] = csrf_token
+            setattr(g, self._csrf_name, csrf_token)
 
         if request.method not in ('GET', 'HEAD', 'OPTIONS', 'TRACE'):
             # Retrieve the view function based on the request endpoint and
@@ -230,18 +230,19 @@ class SeaSurf(object):
                 return abort(403)
 
     def _after_request(self, response):
-        '''Checks if a request session contains the CSRF token. If so, returns
-        the response. If not then we set a cookie on the response and return
-        the response. Bound to the Flask `after_request` decorator.'''
+        '''Checks if the flask.g object contains the CSRF token. If so, returns
+        the response with a cookie containing the token. If not then we just
+        return the response unaltered. Bound to the Flask `after_request`
+        decorator.'''
 
-        if session.get(self._csrf_name) is None:
+        if getattr(g, self._csrf_name) is None:
             return response
 
-        if not session.get('_csrf_used', False):
+        if not getattr(g, '_csrf_used', False):
             return response
 
         response.set_cookie(self._csrf_name,
-                            session[self._csrf_name],
+                            getattr(g, self._csrf_name),
                             max_age=self._csrf_timeout)
         response.vary.add('Cookie')
         return response
@@ -249,8 +250,8 @@ class SeaSurf(object):
     def _get_token(self):
         '''Attempts to get a token from the request cookies and sets
         `_csrf_used` to True.'''
-        session['_csrf_used'] = True
-        return session.get(self._csrf_name, None)
+        g._csrf_used = True
+        return getattr(g, self._csrf_name, None)
 
     def _generate_token(self):
         '''Generates a token with randomly salted SHA1. Returns a string.'''
