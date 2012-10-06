@@ -43,8 +43,8 @@ then passing your application object back to the extension, like this:
 
 This extension is configurable via a set of configuration variables which can
 we added to the Flask app's config file. The cookie name, cookie timeout, and
-CSRF disabled parameters may be set via `CSRF_COOKIE_NAME`, 
-`CSRF_COOKIE_TIMEOUT`, and `CSRF_DISABLED`, respectively.
+CSRF disable parameters may be set via `CSRF_COOKIE_NAME`, 
+`CSRF_COOKIE_TIMEOUT`, and `CSRF_DISABLE`, respectively.
 
 Corrosponding code will need to be added to the templates where `POST`, `PUT`, 
 and `DELETE` HTTP methods are anticipated. In the case of `POST` requests
