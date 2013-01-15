@@ -11,7 +11,6 @@ class SeaSurfTestCase(unittest.TestCase):
     def setUp(self):
         app = Flask(__name__)
         app.debug = True
-        app.secret_key = 'hunter2'
         self.app = app
 
         csrf = SeaSurf(app)
@@ -89,7 +88,6 @@ class SeaSurfTestCaseExemptViews(unittest.TestCase):
     def setUp(self):
         app = Flask(__name__)
         app.debug = True
-        app.secret_key = 'hunter2'
         app.config['SEASURF_INCLUDE_OR_EXEMPT_VIEWS'] = 'exempt'
 
         self.app = app
@@ -125,7 +123,6 @@ class SeaSurfTestCaseIncludeViews(unittest.TestCase):
     def setUp(self):
         app = Flask(__name__)
         app.debug = True
-        app.secret_key = 'hunter2'
         app.config['SEASURF_INCLUDE_OR_EXEMPT_VIEWS'] = 'include'
 
         self.app = app
