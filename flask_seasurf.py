@@ -255,5 +255,5 @@ class SeaSurf(object):
 
     def _generate_token(self):
         '''Generates a token with randomly salted SHA1. Returns a string.'''
-        salt = (randrange(0, _MAX_CSRF_KEY), self._secret_key)
-        return str(hashlib.sha1('%s%s' % salt).hexdigest())
+        salt = randrange(0, _MAX_CSRF_KEY)
+        return str(hashlib.sha1(str(salt)).hexdigest())
