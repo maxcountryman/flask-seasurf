@@ -69,8 +69,9 @@ class SeaSurf(object):
     this extension is to generate and validate CSRF tokens. The design and
     implementation of this extension is influenced by Django's CSRF middleware.
 
-    Tokens are generated using a salted SHA1 hash. The salt is based off your
-    application's `SECRET_KEY` setting and a random range.
+    Tokens are generated using a salted SHA1 hash. The salt is based off a
+    a random range. The OS's SystemRandom is used if available, otherwise
+    the core random.randrange is used.
 
     You might intialize :class:`SeaSurf` something like this::
 
@@ -122,7 +123,6 @@ class SeaSurf(object):
         # expose the CSRF token to the template
         app.jinja_env.globals['csrf_token'] = self._get_token
 
-        self._secret_key = app.config.get('SECRET_KEY', '')
         self._csrf_name = app.config.get('CSRF_COOKIE_NAME', '_csrf_token')
         self._csrf_disable = app.config.get('CSRF_DISABLE',
                                             app.config.get('TESTING', False))
@@ -255,5 +255,5 @@ class SeaSurf(object):
 
     def _generate_token(self):
         '''Generates a token with randomly salted SHA1. Returns a string.'''
-        salt = (randrange(0, _MAX_CSRF_KEY), self._secret_key)
-        return str(hashlib.sha1('%s%s' % salt).hexdigest())
+        salt = randrange(0, _MAX_CSRF_KEY)
+        return str(hashlib.sha1(str(salt)).hexdigest())
