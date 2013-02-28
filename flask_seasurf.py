@@ -124,6 +124,7 @@ class SeaSurf(object):
         app.jinja_env.globals['csrf_token'] = self._get_token
 
         self._csrf_name = app.config.get('CSRF_COOKIE_NAME', '_csrf_token')
+        self._csrf_header_name = app.config.get('CSRF_HEADER_NAME', 'X-CSRFToken')
         self._csrf_disable = app.config.get('CSRF_DISABLE',
                                             app.config.get('TESTING', False))
         self._csrf_timeout = app.config.get('CSRF_COOKIE_TIMEOUT',
@@ -211,7 +212,11 @@ class SeaSurf(object):
                     self.app.logger.warning('Forbidden (%s): %s' % error)
                     return abort(403)
 
-                allowed_referer = request.url_root
+                # by setting the Access-Control-Allow-Origin header, browsers will
+                # let you send cross-domain ajax requests so if there is an Origin
+                # header, the browser has already decided that it trusts this domain
+                # otherwise it would have blocked the request before it got here.
+                allowed_referer = request.headers.get('Origin') or request.url_root
                 if not _same_origin(referer, allowed_referer):
                     error = REASON_BAD_REFERER % (referer, allowed_referer)
                     error = (error, request.path)
@@ -222,7 +227,7 @@ class SeaSurf(object):
             if request_csrf_token == '':
                 # As per the Django middleware, this makes AJAX easier and
                 # PUT and DELETE possible
-                request_csrf_token = request.headers.get('X-CSRFToken', '')
+                request_csrf_token = request.headers.get(self._csrf_header_name, '')
 
             if not _constant_time_compare(request_csrf_token, csrf_token):
                 error = (REASON_BAD_TOKEN, request.path)
