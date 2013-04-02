@@ -14,7 +14,7 @@ from setuptools import setup
 
 setup(
     name='Flask-SeaSurf',
-    version='0.1.13',
+    version='0.1.14',
     url='https://github.com/maxcountryman/flask-seasurf/',
     license='BSD',
     author='Max Countryman',

@@ -11,7 +11,7 @@
 
 from __future__ import absolute_import
 
-__version__ = '0.1.13'
+__version__ = '0.1.14'
 
 import hashlib
 import random
