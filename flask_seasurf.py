@@ -235,7 +235,7 @@ class SeaSurf(object):
         return the response unaltered. Bound to the Flask `after_request`
         decorator.'''
 
-        if getattr(g, self._csrf_name) is None:
+        if getattr(g, self._csrf_name, None) is None:
             return response
 
         if not getattr(g, '_csrf_used', False):
