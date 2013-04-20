@@ -170,18 +170,18 @@ class SeaSurf(object):
         self._include_views.add(view)
         return view
 
-    def _should_apply_seasurf(self, view_func):
+    def _should_use_token(self, view_func):
         '''Given a view function, determine whether or not we should
-        use CSRF protection for the view.'''
+        deliver a CSRF token through the response.'''
         if self._type == 'exempt':
             if view_func in self._exempt_views:
-                return True
+                return False
         elif self._type == 'include':
             if view_func not in self._include_views:
-                return True
+                return False
         else:
             raise NotImplementedError
-        return False
+        return True
 
     def _before_request(self):
         '''Determine if a view is exempt from CSRF validation and if not
@@ -204,15 +204,16 @@ class SeaSurf(object):
             setattr(g, self._csrf_name, self._generate_token())
         else:
             setattr(g, self._csrf_name, csrf_token)
-
+       
         # Always set this to let the response know whether or not to set the CSRF token
         setattr(g, 'view_func', self.app.view_functions.get(request.endpoint))
-        if self._should_apply_seasurf(g.view_func) == False:
-            return
 
         if request.method not in ('GET', 'HEAD', 'OPTIONS', 'TRACE'):
             # Retrieve the view function based on the request endpoint and
             # then compare it to the set of exempted views
+            if self._should_use_token(g.view_func) == False:
+                return
+
             if request.is_secure:
                 referer = request.headers.get('Referer')
                 if referer is None:
@@ -250,9 +251,9 @@ class SeaSurf(object):
 
         if getattr(g, self._csrf_name, None) is None:
             return response
-    
+        
         view_func = getattr(g, 'view_func', None)
-        if not (view_func and self._should_apply_seasurf(view_func)):
+        if not (view_func and self._should_use_token(view_func)):
             return response
 
         response.set_cookie(self._csrf_name,
