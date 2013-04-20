@@ -170,6 +170,20 @@ class SeaSurf(object):
         self._include_views.add(view)
         return view
 
+    def _should_use_token(self, view_func):
+        '''Given a view function, determine whether or not we should
+        deliver a CSRF token to this view through the response and
+        validate CSRF tokens upon requests to this view.'''
+        if self._type == 'exempt':
+            if view_func in self._exempt_views:
+                return False
+        elif self._type == 'include':
+            if view_func not in self._include_views:
+                return False
+        else:
+            raise NotImplementedError
+        return True
+
     def _before_request(self):
         '''Determine if a view is exempt from CSRF validation and if not
         then ensure the validity of the CSRF token. This method is bound to
@@ -191,19 +205,15 @@ class SeaSurf(object):
             setattr(g, self._csrf_name, self._generate_token())
         else:
             setattr(g, self._csrf_name, csrf_token)
+       
+        # Always set this to let the response know whether or not to set the CSRF token
+        g._view_func = self.app.view_functions.get(request.endpoint)
 
         if request.method not in ('GET', 'HEAD', 'OPTIONS', 'TRACE'):
             # Retrieve the view function based on the request endpoint and
             # then compare it to the set of exempted views
-            view_func = self.app.view_functions.get(request.endpoint)
-            if self._type == 'exempt':
-                if view_func in self._exempt_views:
-                    return
-            elif self._type == 'include':
-                if view_func not in self._include_views:
-                    return
-            else:
-                raise NotImplementedError
+            if not self._should_use_token(g._view_func):
+                return
 
             if request.is_secure:
                 referer = request.headers.get('Referer')
@@ -235,15 +245,17 @@ class SeaSurf(object):
                 return abort(403)
 
     def _after_request(self, response):
-        '''Checks if the flask.g object contains the CSRF token. If so, returns
+        '''Checks if the flask.g object contains the CSRF token, and if
+        the view in question has CSRF protection enabled. If both, returns
         the response with a cookie containing the token. If not then we just
         return the response unaltered. Bound to the Flask `after_request`
         decorator.'''
 
         if getattr(g, self._csrf_name, None) is None:
             return response
-
-        if not getattr(g, '_csrf_used', False):
+        
+        _view_func = getattr(g, '_view_func', False)
+        if not (_view_func and self._should_use_token(_view_func)):
             return response
 
         response.set_cookie(self._csrf_name,
@@ -253,9 +265,7 @@ class SeaSurf(object):
         return response
 
     def _get_token(self):
-        '''Attempts to get a token from the request cookies and sets
-        `_csrf_used` to True.'''
-        g._csrf_used = True
+        '''Attempts to get a token from the request cookies.'''
         return getattr(g, self._csrf_name, None)
 
     def _generate_token(self):
