@@ -172,7 +172,8 @@ class SeaSurf(object):
 
     def _should_use_token(self, view_func):
         '''Given a view function, determine whether or not we should
-        deliver a CSRF token through the response.'''
+        deliver a CSRF token to this view through the response and
+        validate CSRF tokens upon requests to this view.'''
         if self._type == 'exempt':
             if view_func in self._exempt_views:
                 return False
@@ -244,7 +245,8 @@ class SeaSurf(object):
                 return abort(403)
 
     def _after_request(self, response):
-        '''Checks if the flask.g object contains the CSRF token. If so, returns
+        '''Checks if the flask.g object contains the CSRF token, and if
+        the view in question has CSRF protection enabled. If both, returns
         the response with a cookie containing the token. If not then we just
         return the response unaltered. Bound to the Flask `after_request`
         decorator.'''
