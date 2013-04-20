@@ -205,7 +205,7 @@ class SeaSurf(object):
         else:
             setattr(g, self._csrf_name, csrf_token)
 
-        # Always set this to let the response know whether or not to set teh CSRF token
+        # Always set this to let the response know whether or not to set the CSRF token
         setattr(g, 'view_func', self.app.view_functions.get(request.endpoint))
         if self._should_apply_seasurf(g.view_func) == False:
             return
