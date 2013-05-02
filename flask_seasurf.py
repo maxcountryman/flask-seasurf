@@ -207,12 +207,12 @@ class SeaSurf(object):
             setattr(g, self._csrf_name, csrf_token)
        
         # Always set this to let the response know whether or not to set the CSRF token
-        setattr(g, 'view_func', self.app.view_functions.get(request.endpoint))
+        g._view_func = self.app.view_functions.get(request.endpoint)
 
         if request.method not in ('GET', 'HEAD', 'OPTIONS', 'TRACE'):
             # Retrieve the view function based on the request endpoint and
             # then compare it to the set of exempted views
-            if self._should_use_token(g.view_func) == False:
+            if not self._should_use_token(g._view_func):
                 return
 
             if request.is_secure:
@@ -254,8 +254,8 @@ class SeaSurf(object):
         if getattr(g, self._csrf_name, None) is None:
             return response
         
-        view_func = getattr(g, 'view_func', None)
-        if not (view_func and self._should_use_token(view_func)):
+        _view_func = getattr(g, '_view_func', False)
+        if not (_view_func and self._should_use_token(_view_func)):
             return response
 
         response.set_cookie(self._csrf_name,
