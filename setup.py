@@ -9,12 +9,19 @@
 
     * `documentation <http://packages.python.org/Flask-SeaSurf>`_
 '''
+import os
 
 from setuptools import setup
 
+module_path = os.path.join(os.path.dirname(__file__), 'flask_seasurf.py')
+version_line = [line for line in open(module_path)
+                if line.startswith('__version_info__')][0]
+
+__version__ = '.'.join(eval(version_line.split('__version_info__ = ')[-1]))
+
 setup(
     name='Flask-SeaSurf',
-    version='0.1.17',
+    version=__version__,
     url='https://github.com/maxcountryman/flask-seasurf/',
     license='BSD',
     author='Max Countryman',
