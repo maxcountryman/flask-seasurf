@@ -89,8 +89,65 @@ might be done please refer to the `Django CSRF documentation
 <https://docs.djangoproject.com/en/dev/ref/contrib/csrf/#ajax>`_. 
 
 
+Flask-WTForms Usage
+-------------------
+
+If you would like to use Flask-Seasurf with a form generator, such as WTForms,
+it is possible to do so. Below is a simple example.
+
+First we will define a custom `SeaSurfForm` object in a `seasurf_form` module
+like so:
+
+.. code-block:: python
+
+    from flask.ext.wtf import Form, HiddenField
+    from flask import g
+
+    # import your app here
+    from your_project import app
+
+
+    class SeaSurfForm(Form):
+        @staticmethod
+        @app.before_request
+        def add_csrf():
+            csrf_name = app.config.get('CSRF_COOKIE_NAME', '_csrf_token')
+            setattr(SeaSurfForm,
+                    csrf_name,
+                    HiddenField(default=getattr(g, csrf_name)))
+
+Now assume we define a module `forms` as such:
+
+.. code-block:: python
+
+    from flask.ext.wtf import DataRequired, TextField, PasswordField, Email
+    from seasurf_form import SeaSurfForm
+
+
+    class LoginForm(SeaSurfForm):
+        email = TextField('email', validators=[DataRequired(), Email()])
+        password = PasswordField('password', validators=[DataRequired()])
+
+This is the basis of our login form which we will serve up in a view to the
+user. Finally we can use this in our template `login.html`:
+
+.. code-block:: html
+
+    <form method="POST" action="{{ url_for('login') }}">
+        {{ form.hidden_tag() }}
+
+        <p>
+            {{form.email.label }} {{ form.email(size=50) }}
+        </p>
+        <p>
+            {{form.password.label }} {{ form.password(size=50) }}
+        </p>
+        <p>
+            <input type="submit" value="Login">
+        </p>
+    </form>
+
 API
 ---
 .. autoclass:: flask_seasurf.SeaSurf
     :members:
-
