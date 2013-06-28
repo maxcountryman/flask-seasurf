@@ -1,6 +1,6 @@
 #Flask-SeaSurf
 
-![build status](https://secure.travis-ci.org/maxcountryman/flask-seasurf.png?branch=master)
+[![build status](https://secure.travis-ci.org/maxcountryman/flask-seasurf.png?branch=master)](https://travis-ci.org/#!/maxcountryman/flask-seasurf)
 
 SeaSurf is a Flask extension for preventing cross-site request forgery (CSRF). 
 
