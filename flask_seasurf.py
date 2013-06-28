@@ -25,6 +25,7 @@ import urlparse
 from datetime import timedelta
 
 from flask import g, request, abort
+from werkzeug.security import safe_str_cmp
 
 if hasattr(random, 'SystemRandom'):
     randrange = random.SystemRandom().randrange
@@ -55,18 +56,6 @@ def _same_origin(url1, url2):
     origin1 = p1.scheme, p1.hostname, p1.port
     origin2 = p2.scheme, p2.hostname, p2.port
     return origin1 == origin2
-
-
-def _constant_time_compare(val1, val2):
-    '''Compare two values in constant time.'''
-    if val1 is None or val2 is None:
-        return False
-    if len(val1) != len(val2):
-        return False
-    result = 0
-    for x, y in zip(val1, val2):
-        result |= ord(x) ^ ord(y)
-    return result == 0
 
 
 class SeaSurf(object):
@@ -244,7 +233,8 @@ class SeaSurf(object):
                 # PUT and DELETE possible
                 request_csrf_token = request.headers.get(self._csrf_header_name, '')
 
-            if not _constant_time_compare(request_csrf_token, csrf_token):
+            some_none = None in (request_csrf_token, csrf_token)
+            if some_none or not safe_str_cmp(request_csrf_token, csrf_token):
                 error = (REASON_BAD_TOKEN, request.path)
                 self.app.logger.warning('Forbidden (%s): %s' % error)
                 return abort(403)
