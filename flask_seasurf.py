@@ -142,7 +142,8 @@ class SeaSurf(object):
         :param view: The view to be wrapped by the decorator.
         '''
 
-        self._exempt_views.add(view)
+        view_location = '%s.%s' % (view.__module__, view.__name__)
+        self._exempt_views.add(view_location)
         return view
 
     def include(self, view):
@@ -161,18 +162,20 @@ class SeaSurf(object):
         :param view: The view to be wrapped by the decorator.
         '''
 
-        self._include_views.add(view)
+        view_location = '%s.%s' % (view.__module__, view.__name__)
+        self._include_views.add(view_location)
         return view
 
     def _should_use_token(self, view_func):
         '''Given a view function, determine whether or not we should
         deliver a CSRF token to this view through the response and
         validate CSRF tokens upon requests to this view.'''
+        view = '%s.%s' % (view_func.__module__, view_func.__name__)
         if self._type == 'exempt':
-            if view_func in self._exempt_views:
+            if view in self._exempt_views:
                 return False
         elif self._type == 'include':
-            if view_func not in self._include_views:
+            if view not in self._include_views:
                 return False
         else:
             raise NotImplementedError
@@ -199,7 +202,7 @@ class SeaSurf(object):
             setattr(g, self._csrf_name, self._generate_token())
         else:
             setattr(g, self._csrf_name, csrf_token)
-       
+
         # Always set this to let the response know whether or not to set the CSRF token
         g._view_func = self.app.view_functions.get(request.endpoint)
 
@@ -248,7 +251,7 @@ class SeaSurf(object):
 
         if getattr(g, self._csrf_name, None) is None:
             return response
-        
+
         _view_func = getattr(g, '_view_func', False)
         if not (_view_func and self._should_use_token(_view_func)):
             return response
