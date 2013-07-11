@@ -170,6 +170,8 @@ class SeaSurf(object):
         '''Given a view function, determine whether or not we should
         deliver a CSRF token to this view through the response and
         validate CSRF tokens upon requests to this view.'''
+        if view is None:
+            return False
         view = '%s.%s' % (view_func.__module__, view_func.__name__)
         if self._type == 'exempt':
             if view in self._exempt_views:
