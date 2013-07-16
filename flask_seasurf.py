@@ -18,21 +18,28 @@ __license__ = 'BSD'
 __copyright__ = '(c) 2011 by Max Countryman'
 __all__ = ['SeaSurf']
 
+import sys
 import hashlib
 import random
-import urlparse
 
 from datetime import timedelta
 
 from flask import g, request, abort
 from werkzeug.security import safe_str_cmp
 
+
+if sys.version_info[0] < 3:
+    import urlparse
+    _MAX_CSRF_KEY = long(18446744073709551616)  # 2 << 63
+else:
+    import urllib.parse as urlparse
+    _MAX_CSRF_KEY = 18446744073709551616  # 2 << 63
+
+
 if hasattr(random, 'SystemRandom'):
     randrange = random.SystemRandom().randrange
 else:
     randrange = random.randrange
-
-_MAX_CSRF_KEY = 18446744073709551616L  # 2 << 63
 
 REASON_NO_REFERER = 'Referer checking failed: no referer.'
 REASON_BAD_REFERER = 'Referer checking failed: %s does not match %s.'
@@ -270,5 +277,5 @@ class SeaSurf(object):
 
     def _generate_token(self):
         '''Generates a token with randomly salted SHA1. Returns a string.'''
-        salt = randrange(0, _MAX_CSRF_KEY)
-        return str(hashlib.sha1(str(salt)).hexdigest())
+        salt = str(randrange(0, _MAX_CSRF_KEY)).encode('utf-8')
+        return hashlib.sha1(salt).hexdigest()
