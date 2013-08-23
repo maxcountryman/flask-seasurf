@@ -130,6 +130,8 @@ class SeaSurf(object):
                                             app.config.get('TESTING', False))
         self._csrf_timeout = app.config.get('CSRF_COOKIE_TIMEOUT',
                                             timedelta(days=5))
+        self._csrf_secure = app.config.get('CSRF_COOKIE_SECURE', False)
+        self._csrf_httponly = app.config.get('CSRF_COOKIE_HTTPONLY', False)
         self._type = app.config.get('SEASURF_INCLUDE_OR_EXEMPT_VIEWS',
                                     'exempt')
 
@@ -267,7 +269,10 @@ class SeaSurf(object):
 
         response.set_cookie(self._csrf_name,
                             getattr(g, self._csrf_name),
-                            max_age=self._csrf_timeout)
+                            max_age=self._csrf_timeout,
+                            secure=self._csrf_secure,
+                            httponly=self._csrf_httponly
+                            )
         response.vary.add('Cookie')
         return response
 
