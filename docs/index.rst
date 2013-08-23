@@ -42,7 +42,7 @@ then passing your application object back to the extension, like this:
     csrf = SeaSurf(app)
 
 This extension is configurable via a set of configuration variables which can
-we added to the Flask app's config file. The cookie name, cookie timeout, cookie
+be added to the Flask app's config file. The cookie name, cookie timeout, cookie
 HTTPOnly flag, cookie secure flag, and CSRF disable parameters may be set via
 `CSRF_COOKIE_NAME`, `CSRF_COOKIE_TIMEOUT`, `CSRF_COOKIE_HTTPONLY`,
 `CSRF_COOKIE_SECURE`, and `CSRF_DISABLE`, respectively.
