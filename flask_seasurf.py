@@ -24,7 +24,7 @@ import random
 
 from datetime import timedelta
 
-from flask import g, request, abort
+from flask import g, request, abort, session
 from werkzeug.security import safe_str_cmp
 
 
@@ -208,7 +208,7 @@ class SeaSurf(object):
         if self._csrf_disable:
             return  # don't validate for testing
 
-        csrf_token = request.cookies.get(self._csrf_name, None)
+        csrf_token = session.get(self._csrf_name, None)
         if not csrf_token:
             setattr(g, self._csrf_name, self._generate_token())
         else:
@@ -267,6 +267,7 @@ class SeaSurf(object):
         if not (_view_func and self._should_use_token(_view_func)):
             return response
 
+        session[self._csrf_name] = getattr(g, self._csrf_name)
         response.set_cookie(self._csrf_name,
                             getattr(g, self._csrf_name),
                             max_age=self._csrf_timeout,
