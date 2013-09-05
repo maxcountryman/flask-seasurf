@@ -18,6 +18,7 @@ class SeaSurfTestCase(unittest.TestCase):
     def setUp(self):
         app = Flask(__name__)
         app.debug = True
+        app.secret_key = '1234'
         self.app = app
 
         csrf = SeaSurf(app)
@@ -56,10 +57,13 @@ class SeaSurfTestCase(unittest.TestCase):
 
     def test_https_bad_referer(self):
         with self.app.test_client() as client:
-            token = self.csrf._generate_token()
+            with client.session_transaction() as sess:
+                token = self.csrf._generate_token()
 
-            client.set_cookie('www.example.com', self.csrf._csrf_name, token)
+                client.set_cookie('www.example.com', self.csrf._csrf_name, token)
+                sess[self.csrf._csrf_name] = token
 
+            # once this is reached the session was stored
             rv = client.post('/bar',
                 data={self.csrf._csrf_name: token},
                 base_url='https://www.example.com',
@@ -70,10 +74,13 @@ class SeaSurfTestCase(unittest.TestCase):
 
     def test_https_good_referer(self):
         with self.app.test_client() as client:
-            token = self.csrf._generate_token()
+            with client.session_transaction() as sess:
+                token = self.csrf._generate_token()
 
-            client.set_cookie('www.example.com', self.csrf._csrf_name, token)
+                client.set_cookie('www.example.com', self.csrf._csrf_name, token)
+                sess[self.csrf._csrf_name] = token
 
+            # once this is reached the session was stored
             rv = client.post('/bar',
                 data={self.csrf._csrf_name: token},
                 base_url='https://www.example.com',
@@ -95,6 +102,7 @@ class SeaSurfTestCaseExemptViews(unittest.TestCase):
     def setUp(self):
         app = Flask(__name__)
         app.debug = True
+        app.secret_key = '1234'
         app.config['SEASURF_INCLUDE_OR_EXEMPT_VIEWS'] = 'exempt'
 
         self.app = app
@@ -130,6 +138,7 @@ class SeaSurfTestCaseIncludeViews(unittest.TestCase):
     def setUp(self):
         app = Flask(__name__)
         app.debug = True
+        app.secret_key = '1234'
         app.config['SEASURF_INCLUDE_OR_EXEMPT_VIEWS'] = 'include'
 
         self.app = app
