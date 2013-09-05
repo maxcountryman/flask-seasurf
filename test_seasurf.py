@@ -1,9 +1,16 @@
 from __future__ import with_statement
 
+import sys
 import unittest
 
 from flask import Flask
 from flask_seasurf import SeaSurf
+
+
+if sys.version_info[0] < 3:
+    b = lambda s: s
+else:
+    b = lambda s: s.encode('utf-8')
 
 
 class SeaSurfTestCase(unittest.TestCase):
@@ -40,12 +47,12 @@ class SeaSurfTestCase(unittest.TestCase):
 
     def test_exempt_view(self):
         rv = self.app.test_client().post('/foo')
-        self.assertIn('bar', rv.data)
+        self.assertIn(b('bar'), rv.data)
 
     def test_token_validation(self):
         # should produce a logger warning
         rv = self.app.test_client().post('/bar')
-        self.assertIn('403 Forbidden', rv.data)
+        self.assertIn(b('403 Forbidden'), rv.data)
 
     def test_https_bad_referer(self):
         with self.app.test_client() as client:
@@ -107,12 +114,12 @@ class SeaSurfTestCaseExemptViews(unittest.TestCase):
 
     def test_exempt_view(self):
         rv = self.app.test_client().post('/foo')
-        self.assertIn('bar', rv.data)
+        self.assertIn(b('bar'), rv.data)
 
     def test_token_validation(self):
         # should produce a logger warning
         rv = self.app.test_client().post('/bar')
-        self.assertIn('403 Forbidden', rv.data)
+        self.assertIn(b('403 Forbidden'), rv.data)
 
     def assertIn(self, value, container):
         self.assertTrue(value in container)
@@ -142,12 +149,12 @@ class SeaSurfTestCaseIncludeViews(unittest.TestCase):
 
     def test_include_view(self):
         rv = self.app.test_client().post('/foo')
-        self.assertIn('403 Forbidden', rv.data)
+        self.assertIn(b('403 Forbidden'), rv.data)
 
     def test_token_validation(self):
         # should produce a logger warning
         rv = self.app.test_client().post('/bar')
-        self.assertIn('foo', rv.data)
+        self.assertIn(b('foo'), rv.data)
 
     def assertIn(self, value, container):
         self.assertTrue(value in container)
