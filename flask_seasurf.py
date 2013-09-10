@@ -126,14 +126,17 @@ class SeaSurf(object):
 
         self._csrf_name = app.config.get('CSRF_COOKIE_NAME', '_csrf_token')
         self._csrf_header_name = app.config.get('CSRF_HEADER_NAME', 'X-CSRFToken')
-        self._csrf_disable = app.config.get('CSRF_DISABLE',
-                                            app.config.get('TESTING', False))
         self._csrf_timeout = app.config.get('CSRF_COOKIE_TIMEOUT',
                                             timedelta(days=5))
         self._csrf_secure = app.config.get('CSRF_COOKIE_SECURE', False)
         self._csrf_httponly = app.config.get('CSRF_COOKIE_HTTPONLY', False)
         self._type = app.config.get('SEASURF_INCLUDE_OR_EXEMPT_VIEWS',
                                     'exempt')
+
+    @property
+    def _csrf_disable(self):
+        return self.app.config.get('CSRF_DISABLE', 
+                                   self.app.config.get('TESTING', False))
 
     def exempt(self, view):
         '''A decorator that can be used to exclude a view from CSRF validation.
