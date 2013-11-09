@@ -241,7 +241,9 @@ class SeaSurf(object):
                     self.app.logger.warning('Forbidden (%s): %s' % error)
                     return abort(403)
 
-            request_csrf_token = request.form.get(self._csrf_name, '')
+            request_csrf_token = ( request.form.get(self._csrf_name, '') or
+                                   request.json.get(self._csrf_name, '') )
+
             if request_csrf_token == '':
                 # As per the Django middleware, this makes AJAX easier and
                 # PUT and DELETE possible
