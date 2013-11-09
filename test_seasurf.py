@@ -55,6 +55,33 @@ class SeaSurfTestCase(unittest.TestCase):
         rv = self.app.test_client().post('/bar')
         self.assertIn(b('403 Forbidden'), rv.data)
 
+    def test_json_token_validation_bad(self):
+        """Should fail with 403 JSON _csrf_token differers from session token"""
+        tokenA = self.csrf._generate_token()
+        tokenB = self.csrf._generate_token()
+        data = {'_csrf_token': tokenB }
+        headers = {'Content-Type': 'application/json'}
+        with self.app.test_client() as client:
+            with client.session_transaction() as sess:
+                sess[self.csrf._csrf_name] = tokenA
+                client.set_cookie('www.example.com', self.csrf._csrf_name, tokenB)
+
+            rv = client.post('/bar', data=data)
+            self.assertEqual(rv.status_code, 403, rv)
+
+    def test_json_token_validation_good(self):
+        """Should succeed error if JSON has _csrf_token set"""
+        token = self.csrf._generate_token()
+        data = {'_csrf_token': token }
+        headers = {'Content-Type': 'application/json'}
+        with self.app.test_client() as client:
+            with client.session_transaction() as sess:
+                client.set_cookie('www.example.com', self.csrf._csrf_name, token)
+                sess[self.csrf._csrf_name] = token
+
+            rv = client.post('/bar', data=data)
+            self.assertEqual(rv.status_code, 200, rv)
+
     def test_https_bad_referer(self):
         with self.app.test_client() as client:
             with client.session_transaction() as sess:
