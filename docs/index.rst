@@ -47,7 +47,7 @@ HTTPOnly flag, cookie secure flag, and CSRF disable parameters may be set via
 `CSRF_COOKIE_NAME`, `CSRF_COOKIE_TIMEOUT`, `CSRF_COOKIE_HTTPONLY`,
 `CSRF_COOKIE_SECURE`, and `CSRF_DISABLE`, respectively.
 
-Corrosponding code will need to be added to the templates where `POST`, `PUT`, 
+Corresponding code will need to be added to the templates where `POST`, `PUT`, 
 and `DELETE` HTTP methods are anticipated. In the case of `POST` requests
 a hidden field should be added, something like this:
 
