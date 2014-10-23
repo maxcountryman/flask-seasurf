@@ -101,9 +101,12 @@ class SeaSurf(object):
         decorator to indicate that they should not be checked.
     '''
 
-    def __init__(self):
+    def __init__(self, app=None):
         self._exempt_views = set()
         self._include_views = set()
+
+        if app is not None:
+            self.init_app(app)
 
     def init_app(self, app):
         '''
