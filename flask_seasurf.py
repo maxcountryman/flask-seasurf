@@ -270,10 +270,11 @@ class SeaSurf(object):
 
     def _after_request(self, response):
         '''
-        Checks if the flask.g object contains the CSRF token, and if the view
-        in question has CSRF protection enabled. If both, returns the response
-        with a cookie containing the token. If not then we just return the
-        response unaltered. Bound to the Flask `after_request` decorator.
+        Checks if the `flask._app_ctx_object` object contains the CSRF token,
+        and if the view in question has CSRF protection enabled. If both,
+        returns the response with a cookie containing the token. If not then we
+        just return the response unaltered. Bound to the Flask `after_request`
+        decorator.
 
         :param response: A Flask Response object.
         '''
