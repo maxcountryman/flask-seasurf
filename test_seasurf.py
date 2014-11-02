@@ -14,16 +14,18 @@ else:
 
 
 class SeaSurfTestCase(unittest.TestCase):
-
     def setUp(self):
         app = Flask(__name__)
         app.debug = True
         app.secret_key = '1234'
         self.app = app
 
-        csrf = SeaSurf(app)
+        csrf = SeaSurf()
         csrf._csrf_disable = False
         self.csrf = csrf
+
+        # Initialize CSRF protection.
+        self.csrf.init_app(app)
 
         @csrf.exempt
         @app.route('/foo', methods=['POST'])
@@ -60,7 +62,6 @@ class SeaSurfTestCase(unittest.TestCase):
         tokenA = self.csrf._generate_token()
         tokenB = self.csrf._generate_token()
         data = {'_csrf_token': tokenB }
-        headers = {'Content-Type': 'application/json'}
         with self.app.test_client() as client:
             with client.session_transaction() as sess:
                 sess[self.csrf._csrf_name] = tokenA
@@ -73,7 +74,6 @@ class SeaSurfTestCase(unittest.TestCase):
         """Should succeed error if JSON has _csrf_token set"""
         token = self.csrf._generate_token()
         data = {'_csrf_token': token }
-        headers = {'Content-Type': 'application/json'}
         with self.app.test_client() as client:
             with client.session_transaction() as sess:
                 client.set_cookie('www.example.com', self.csrf._csrf_name, token)
@@ -94,8 +94,7 @@ class SeaSurfTestCase(unittest.TestCase):
             rv = client.post('/bar',
                 data={self.csrf._csrf_name: token},
                 base_url='https://www.example.com',
-                headers={'Referer': 'https://www.evil.com/foobar'}
-            )
+                headers={'Referer': 'https://www.evil.com/foobar'})
 
             self.assertEqual(403, rv.status_code)
 
@@ -111,8 +110,7 @@ class SeaSurfTestCase(unittest.TestCase):
             rv = client.post('/bar',
                 data={self.csrf._csrf_name: token},
                 base_url='https://www.example.com',
-                headers={'Referer': 'https://www.example.com/foobar'}
-            )
+                headers={'Referer': 'https://www.example.com/foobar'})
 
             self.assertEqual(rv.status_code, 200)
 
@@ -125,7 +123,6 @@ class SeaSurfTestCase(unittest.TestCase):
 
 
 class SeaSurfTestCaseExemptViews(unittest.TestCase):
-
     def setUp(self):
         app = Flask(__name__)
         app.debug = True
@@ -134,9 +131,12 @@ class SeaSurfTestCaseExemptViews(unittest.TestCase):
 
         self.app = app
 
-        csrf = SeaSurf(app)
+        csrf = SeaSurf()
         csrf._csrf_disable = False
         self.csrf = csrf
+
+        # Initialize CSRF protection.
+        self.csrf.init_app(app)
 
         @csrf.exempt
         @app.route('/foo', methods=['POST'])
@@ -161,7 +161,6 @@ class SeaSurfTestCaseExemptViews(unittest.TestCase):
 
 
 class SeaSurfTestCaseIncludeViews(unittest.TestCase):
-
     def setUp(self):
         app = Flask(__name__)
         app.debug = True
@@ -170,9 +169,12 @@ class SeaSurfTestCaseIncludeViews(unittest.TestCase):
 
         self.app = app
 
-        csrf = SeaSurf(app)
+        csrf = SeaSurf()
         csrf._csrf_disable = False
         self.csrf = csrf
+
+        # Initialize CSRF protection.
+        self.csrf.init_app(app)
 
         @csrf.include
         @app.route('/foo', methods=['POST'])
@@ -204,5 +206,4 @@ def suite():
     return suite
 
 if __name__ == '__main__':
-
     unittest.main(defaultTest='suite')
