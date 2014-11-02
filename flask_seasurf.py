@@ -215,19 +215,21 @@ class SeaSurf(object):
 
         csrf_token = session.get(self._csrf_name, None)
         if not csrf_token:
-            setattr(_app_ctx_stack, self._csrf_name, self._generate_token())
+            setattr(_app_ctx_stack.top,
+                    self._csrf_name,
+                    self._generate_token())
         else:
-            setattr(_app_ctx_stack, self._csrf_name, csrf_token)
+            setattr(_app_ctx_stack.top, self._csrf_name, csrf_token)
 
         # Always set this to let the response know whether or not to set the
         # CSRF token.
-        _app_ctx_stack._view_func = \
+        _app_ctx_stack.top._view_func = \
             current_app.view_functions.get(request.endpoint)
 
         if request.method not in ('GET', 'HEAD', 'OPTIONS', 'TRACE'):
             # Retrieve the view function based on the request endpoint and
             # then compare it to the set of exempted views
-            if not self._should_use_token(_app_ctx_stack._view_func):
+            if not self._should_use_token(_app_ctx_stack.top._view_func):
                 return
 
             if request.is_secure:
@@ -281,16 +283,16 @@ class SeaSurf(object):
 
         :param response: A Flask Response object.
         '''
-        if getattr(_app_ctx_stack, self._csrf_name, None) is None:
+        if getattr(_app_ctx_stack.top, self._csrf_name, None) is None:
             return response
 
-        _view_func = getattr(_app_ctx_stack, '_view_func', False)
+        _view_func = getattr(_app_ctx_stack.top, '_view_func', False)
         if not (_view_func and self._should_use_token(_view_func)):
             return response
 
-        session[self._csrf_name] = getattr(_app_ctx_stack, self._csrf_name)
+        session[self._csrf_name] = getattr(_app_ctx_stack.top, self._csrf_name)
         response.set_cookie(self._csrf_name,
-                            getattr(_app_ctx_stack, self._csrf_name),
+                            getattr(_app_ctx_stack.top, self._csrf_name),
                             max_age=self._csrf_timeout,
                             secure=self._csrf_secure,
                             httponly=self._csrf_httponly)
@@ -301,7 +303,7 @@ class SeaSurf(object):
         '''
         Attempts to get a token from the request cookies.
         '''
-        return getattr(_app_ctx_stack, self._csrf_name, None)
+        return getattr(_app_ctx_stack.top, self._csrf_name, None)
 
     def _generate_token(self):
         '''
