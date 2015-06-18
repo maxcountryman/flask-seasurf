@@ -42,7 +42,7 @@ else:
     randrange = random.randrange
 
 REASON_NO_REFERER = 'Referer checking failed: no referer.'
-REASON_BAD_REFERER = 'Referer checking failed: {} does not match {}.'
+REASON_BAD_REFERER = 'Referer checking failed: {0} does not match {1}.'
 REASON_NO_CSRF_TOKEN = 'CSRF token not set.'
 REASON_BAD_TOKEN = 'CSRF token missing or incorrect.'
 
@@ -104,6 +104,7 @@ class SeaSurf(object):
     def __init__(self, app=None):
         self._exempt_views = set()
         self._include_views = set()
+        self._exempt_urls = tuple()
 
         if app is not None:
             self.init_app(app)
@@ -152,9 +153,12 @@ class SeaSurf(object):
         :param view: The view to be wrapped by the decorator.
         '''
 
-        view_location = '{}.{}'.format(view.__module__, view.__name__)
+        view_location = '{0}.{1}'.format(view.__module__, view.__name__)
         self._exempt_views.add(view_location)
         return view
+
+    def exempt_urls(self, urls):
+        self._exempt_urls = urls
 
     def include(self, view):
         '''
@@ -172,7 +176,7 @@ class SeaSurf(object):
         :param view: The view to be wrapped by the decorator.
         '''
 
-        view_location = '{}.{}'.format(view.__module__, view.__name__)
+        view_location = '{0}.{1}'.format(view.__module__, view.__name__)
         self._include_views.add(view_location)
         return view
 
@@ -187,11 +191,15 @@ class SeaSurf(object):
         if view_func is None or self._type not in ('exempt', 'include'):
             return False
 
-        view = '{}.{}'.format(view_func.__module__, view_func.__name__)
+        view = '{0}.{1}'.format(view_func.__module__, view_func.__name__)
         if self._type == 'exempt' and view in self._exempt_views:
             return False
 
         if self._type == 'include' and view not in self._include_views:
+            return False
+
+        url = '{0}{1}'.format(request.script_root, request.path)
+        if url.startswith(self._exempt_urls):
             return False
 
         return True
@@ -236,7 +244,7 @@ class SeaSurf(object):
                 referer = request.headers.get('Referer')
                 if referer is None:
                     error = (REASON_NO_REFERER, request.path)
-                    error = 'Forbidden ({}): {}'.format(*error)
+                    error = 'Forbidden ({0}): {1}'.format(*error)
                     current_app.logger.warning(error)
                     return abort(403)
 
@@ -250,11 +258,11 @@ class SeaSurf(object):
                 if not _same_origin(referer, allowed_referer):
                     error = REASON_BAD_REFERER.format(referer, allowed_referer)
                     error = (error, request.path)
-                    error = 'Forbidden ({}): {}'.format(*error)
+                    error = 'Forbidden ({0}): {1}'.format(*error)
                     current_app.logger.warning(error)
                     return abort(403)
 
-            request_csrf_token = request.form.get(self._csrf_name, '') 
+            request_csrf_token = request.form.get(self._csrf_name, '')
             if request_csrf_token == '':
                 # Check to see if the data is being sent as JSON
                 if hasattr(request, 'json') and request.json:
@@ -269,7 +277,7 @@ class SeaSurf(object):
             some_none = None in (request_csrf_token, csrf_token)
             if some_none or not safe_str_cmp(request_csrf_token, csrf_token):
                 error = (REASON_BAD_TOKEN, request.path)
-                error = 'Forbidden ({}): {}'.format(*error)
+                error = 'Forbidden ({0}): {1}'.format(*error)
                 current_app.logger.warning(error)
                 return abort(403)
 
