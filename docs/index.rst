@@ -84,7 +84,7 @@ cross-site request forgery. As such, POSTing with AJAX can make use of the
 aforementioned method, but other HTTP methods, such as `PUT` and `DELETE` might
 be better suited to using the `X-CSRFToken` header instead.
 
-Essentially this header is passed back to the backend by way of extrating the
+Essentially this header is passed back to the backend by way of extracting the
 token from the cookie using JavaScript. For a better explanation of how this
 might be done please refer to the `Django CSRF documentation
 <https://docs.djangoproject.com/en/dev/ref/contrib/csrf/#ajax>`_. 
