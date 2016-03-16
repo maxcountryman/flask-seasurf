@@ -274,6 +274,9 @@ class SeaSurfTestCaseSave(unittest.TestCase):
             self.assertIn(b('bar'), rv.data)
             self.assertEqual(rv.headers['X-Session-Modified'], 'False')
 
+    def assertIn(self, value, container):
+        self.assertTrue(value in container)
+
 
 def suite():
     suite = unittest.TestSuite()
