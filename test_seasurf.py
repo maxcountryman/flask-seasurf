@@ -29,11 +29,13 @@ class SeaSurfTestCase(unittest.TestCase):
 
         @csrf.exempt
         @app.route('/foo', methods=['POST'])
-        def foo():
+        @app.route('/foo/<term>', methods=['POST'])
+        def foo(term=None):
             return 'bar'
 
         @app.route('/bar', methods=['POST'])
-        def bar():
+        @app.route('/bar/<term>', methods=['POST'])
+        def bar(term=None):
             return 'foo'
 
     def test_generate_token(self):
@@ -52,9 +54,15 @@ class SeaSurfTestCase(unittest.TestCase):
         rv = self.app.test_client().post('/foo')
         self.assertIn(b('bar'), rv.data)
 
+        rv = self.app.test_client().post(u'/foo/\xf8')
+        self.assertIn(b('bar'), rv.data)
+
     def test_token_validation(self):
         # should produce a logger warning
         rv = self.app.test_client().post('/bar')
+        self.assertIn(b('403 Forbidden'), rv.data)
+
+        rv = self.app.test_client().post(u'/bar/\xf8')
         self.assertIn(b('403 Forbidden'), rv.data)
 
     def test_json_token_validation_bad(self):
@@ -70,6 +78,9 @@ class SeaSurfTestCase(unittest.TestCase):
             rv = client.post('/bar', data=data)
             self.assertEqual(rv.status_code, 403, rv)
 
+            rv = client.post(u'/bar/\xf8', data=data)
+            self.assertEqual(rv.status_code, 403, rv)
+
     def test_json_token_validation_good(self):
         """Should succeed error if JSON has _csrf_token set"""
         token = self.csrf._generate_token()
@@ -80,6 +91,9 @@ class SeaSurfTestCase(unittest.TestCase):
                 sess[self.csrf._csrf_name] = token
 
             rv = client.post('/bar', data=data)
+            self.assertEqual(rv.status_code, 200, rv)
+
+            rv = client.post(u'/bar/\xf8', data=data)
             self.assertEqual(rv.status_code, 200, rv)
 
     def test_https_bad_referer(self):
@@ -98,6 +112,13 @@ class SeaSurfTestCase(unittest.TestCase):
 
             self.assertEqual(403, rv.status_code)
 
+            rv = client.post(u'/bar/\xf8',
+                data={self.csrf._csrf_name: token},
+                base_url='https://www.example.com',
+                headers={'Referer': u'https://www.evil.com/\xf8'})
+
+            self.assertEqual(403, rv.status_code)
+
     def test_https_good_referer(self):
         with self.app.test_client() as client:
             with client.session_transaction() as sess:
@@ -111,6 +132,13 @@ class SeaSurfTestCase(unittest.TestCase):
                 data={self.csrf._csrf_name: token},
                 base_url='https://www.example.com',
                 headers={'Referer': 'https://www.example.com/foobar'})
+
+            self.assertEqual(rv.status_code, 200)
+
+            rv = client.post(u'/bar/\xf8',
+                data={self.csrf._csrf_name: token},
+                base_url='https://www.example.com',
+                headers={'Referer': 'https://www.example.com/foobar\xf8'})
 
             self.assertEqual(rv.status_code, 200)
 
@@ -178,20 +206,28 @@ class SeaSurfTestCaseIncludeViews(unittest.TestCase):
 
         @csrf.include
         @app.route('/foo', methods=['POST'])
-        def foo():
+        @app.route('/foo/<term>', methods=['POST'])
+        def foo(term=None):
             return 'bar'
 
         @app.route('/bar', methods=['POST'])
-        def bar():
+        @app.route('/bar/<term>', methods=['POST'])
+        def bar(term=None):
             return 'foo'
 
     def test_include_view(self):
         rv = self.app.test_client().post('/foo')
         self.assertIn(b('403 Forbidden'), rv.data)
 
+        rv = self.app.test_client().post(u'/foo/\xf8')
+        self.assertIn(b('403 Forbidden'), rv.data)
+
     def test_token_validation(self):
         # should produce a logger warning
         rv = self.app.test_client().post('/bar')
+        self.assertIn(b('foo'), rv.data)
+
+        rv = self.app.test_client().post(u'/bar/\xf8')
         self.assertIn(b('foo'), rv.data)
 
     def assertIn(self, value, container):

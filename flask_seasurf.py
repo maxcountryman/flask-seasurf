@@ -41,10 +41,10 @@ if hasattr(random, 'SystemRandom'):
 else:
     randrange = random.randrange
 
-REASON_NO_REFERER = 'Referer checking failed: no referer.'
-REASON_BAD_REFERER = 'Referer checking failed: {0} does not match {1}.'
-REASON_NO_CSRF_TOKEN = 'CSRF token not set.'
-REASON_BAD_TOKEN = 'CSRF token missing or incorrect.'
+REASON_NO_REFERER = u'Referer checking failed: no referer.'
+REASON_BAD_REFERER = u'Referer checking failed: {0} does not match {1}.'
+REASON_NO_CSRF_TOKEN = u'CSRF token not set.'
+REASON_BAD_TOKEN = u'CSRF token missing or incorrect.'
 
 
 def _same_origin(url1, url2):
@@ -199,7 +199,7 @@ class SeaSurf(object):
         if self._type == 'include' and view not in self._include_views:
             return False
 
-        url = '{0}{1}'.format(request.script_root, request.path)
+        url = u'{0}{1}'.format(request.script_root, request.path)
         if url.startswith(self._exempt_urls):
             return False
 
@@ -245,7 +245,7 @@ class SeaSurf(object):
                 referer = request.headers.get('Referer')
                 if referer is None:
                     error = (REASON_NO_REFERER, request.path)
-                    error = 'Forbidden ({0}): {1}'.format(*error)
+                    error = u'Forbidden ({0}): {1}'.format(*error)
                     current_app.logger.warning(error)
                     return abort(403)
 
@@ -259,7 +259,7 @@ class SeaSurf(object):
                 if not _same_origin(referer, allowed_referer):
                     error = REASON_BAD_REFERER.format(referer, allowed_referer)
                     error = (error, request.path)
-                    error = 'Forbidden ({0}): {1}'.format(*error)
+                    error = u'Forbidden ({0}): {1}'.format(*error)
                     current_app.logger.warning(error)
                     return abort(403)
 
@@ -278,7 +278,7 @@ class SeaSurf(object):
             some_none = None in (request_csrf_token, csrf_token)
             if some_none or not safe_str_cmp(request_csrf_token, csrf_token):
                 error = (REASON_BAD_TOKEN, request.path)
-                error = 'Forbidden ({0}): {1}'.format(*error)
+                error = u'Forbidden ({0}): {1}'.format(*error)
                 current_app.logger.warning(error)
                 return abort(403)
 
