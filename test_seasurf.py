@@ -276,6 +276,43 @@ class SeaSurfTestCaseExemptUrls(unittest.TestCase):
     def assertIn(self, value, container):
         self.assertTrue(value in container)
 
+class SeaSurfTestCaseSave(unittest.TestCase):
+    def setUp(self):
+        app = Flask(__name__)
+        app.debug = True
+        app.secret_key = '1234'
+        self.app = app
+
+        @app.after_request
+        def after_request(response):
+            from flask import session
+            response.headers['X-Session-Modified'] = str(session.modified)
+            return response
+
+        csrf = SeaSurf()
+        csrf._csrf_disable = False
+        self.csrf = csrf
+
+        # Initialize CSRF protection.
+        self.csrf.init_app(app)
+
+        @app.route('/foo', methods=['GET'])
+        def foo():
+            return 'bar'
+
+    def test_save(self):
+        with self.app.test_client() as client:
+            rv = client.get('/foo')
+            self.assertIn(b('bar'), rv.data)
+            self.assertEqual(rv.headers['X-Session-Modified'], 'True')
+
+            rv = client.get('/foo')
+            self.assertIn(b('bar'), rv.data)
+            self.assertEqual(rv.headers['X-Session-Modified'], 'False')
+
+    def assertIn(self, value, container):
+        self.assertTrue(value in container)
+
 
 def suite():
     suite = unittest.TestSuite()
@@ -283,6 +320,7 @@ def suite():
     suite.addTest(unittest.makeSuite(SeaSurfTestCaseExemptViews))
     suite.addTest(unittest.makeSuite(SeaSurfTestCaseIncludeViews))
     suite.addTest(unittest.makeSuite(SeaSurfTestCaseExemptUrls))
+    suite.addTest(unittest.makeSuite(SeaSurfTestCaseSave))
     return suite
 
 if __name__ == '__main__':

@@ -299,9 +299,11 @@ class SeaSurf(object):
         if not (_view_func and self._should_use_token(_view_func)):
             return response
 
-        session[self._csrf_name] = getattr(_app_ctx_stack.top, self._csrf_name)
+        csrf_token = getattr(_app_ctx_stack.top, self._csrf_name)
+        if session.get(self._csrf_name) != csrf_token:
+            session[self._csrf_name] = csrf_token
         response.set_cookie(self._csrf_name,
-                            getattr(_app_ctx_stack.top, self._csrf_name),
+                            csrf_token,
                             max_age=self._csrf_timeout,
                             secure=self._csrf_secure,
                             httponly=self._csrf_httponly,
