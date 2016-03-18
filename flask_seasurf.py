@@ -24,7 +24,8 @@ import random
 
 from datetime import timedelta
 
-from flask import _app_ctx_stack, abort, current_app, request, session
+from flask import _app_ctx_stack, current_app, request, session
+from werkzeug.exceptions import Forbidden
 from werkzeug.security import safe_str_cmp
 
 
@@ -247,7 +248,7 @@ class SeaSurf(object):
                     error = (REASON_NO_REFERER, request.path)
                     error = u'Forbidden ({0}): {1}'.format(*error)
                     current_app.logger.warning(error)
-                    return abort(403)
+                    raise Forbidden(description=REASON_NO_REFERER)
 
                 # By setting the Access-Control-Allow-Origin header, browsers
                 # will let you send cross-domain AJAX requests so if there is
@@ -258,10 +259,11 @@ class SeaSurf(object):
                                   request.url_root
                 if not _same_origin(referer, allowed_referer):
                     error = REASON_BAD_REFERER.format(referer, allowed_referer)
+                    description = error
                     error = (error, request.path)
                     error = u'Forbidden ({0}): {1}'.format(*error)
                     current_app.logger.warning(error)
-                    return abort(403)
+                    raise Forbidden(description=description)
 
             request_csrf_token = request.form.get(self._csrf_name, '')
             if request_csrf_token == '':
@@ -280,7 +282,7 @@ class SeaSurf(object):
                 error = (REASON_BAD_TOKEN, request.path)
                 error = u'Forbidden ({0}): {1}'.format(*error)
                 current_app.logger.warning(error)
-                return abort(403)
+                raise Forbidden(description=REASON_BAD_TOKEN)
 
     def _after_request(self, response):
         '''
