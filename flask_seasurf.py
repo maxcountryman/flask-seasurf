@@ -134,6 +134,7 @@ class SeaSurf(object):
         self._csrf_secure = app.config.get('CSRF_COOKIE_SECURE', False)
         self._csrf_httponly = app.config.get('CSRF_COOKIE_HTTPONLY', False)
         self._csrf_domain = app.config.get('CSRF_COOKIE_DOMAIN')
+        self._check_referer = app.config.get('CSRF_CHECK_REFERER', True)
         self._type = app.config.get('SEASURF_INCLUDE_OR_EXEMPT_VIEWS',
                                     'exempt')
 
@@ -242,7 +243,7 @@ class SeaSurf(object):
             if not self._should_use_token(_app_ctx_stack.top._view_func):
                 return
 
-            if request.is_secure:
+            if request.is_secure and self._check_referer:
                 referer = request.headers.get('Referer')
                 if referer is None:
                     error = (REASON_NO_REFERER, request.path)

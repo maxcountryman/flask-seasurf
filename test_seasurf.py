@@ -276,6 +276,7 @@ class SeaSurfTestCaseExemptUrls(unittest.TestCase):
     def assertIn(self, value, container):
         self.assertTrue(value in container)
 
+
 class SeaSurfTestCaseSave(unittest.TestCase):
     def setUp(self):
         app = Flask(__name__)
@@ -314,6 +315,56 @@ class SeaSurfTestCaseSave(unittest.TestCase):
         self.assertTrue(value in container)
 
 
+class SeaSurfTestCaseReferer(unittest.TestCase):
+    def setUp(self):
+        app = Flask(__name__)
+        app.debug = True
+        app.secret_key = '1234'
+        app.config['CSRF_CHECK_REFERER'] = False
+        self.app = app
+
+        csrf = SeaSurf()
+        csrf._csrf_disable = False
+        self.csrf = csrf
+
+        # Initialize CSRF protection.
+        self.csrf.init_app(app)
+
+        @csrf.exempt
+        @app.route('/foo', methods=['POST'])
+        @app.route('/foo/<term>', methods=['POST'])
+        def foo(term=None):
+            return 'bar'
+
+        @app.route('/bar', methods=['POST'])
+        @app.route('/bar/<term>', methods=['POST'])
+        def bar(term=None):
+            return 'foo'
+
+    def test_https_referer_check_disabled(self):
+        with self.app.test_client() as client:
+            with client.session_transaction() as sess:
+                token = self.csrf._generate_token()
+
+                client.set_cookie('www.example.com', self.csrf._csrf_name, token)
+                sess[self.csrf._csrf_name] = token
+
+            # once this is reached the session was stored
+            rv = client.post('/bar',
+                data={self.csrf._csrf_name: token},
+                base_url='https://www.example.com',
+                headers={'Referer': 'https://www.evil.com/foobar'})
+
+            self.assertEqual(200, rv.status_code)
+
+            rv = client.post(u'/bar/\xf8',
+                data={self.csrf._csrf_name: token},
+                base_url='https://www.example.com',
+                headers={'Referer': u'https://www.evil.com/\xf8'})
+
+            self.assertEqual(200, rv.status_code)
+
+
 def suite():
     suite = unittest.TestSuite()
     suite.addTest(unittest.makeSuite(SeaSurfTestCase))
@@ -322,6 +373,7 @@ def suite():
     suite.addTest(unittest.makeSuite(SeaSurfTestCaseExemptUrls))
     suite.addTest(unittest.makeSuite(SeaSurfTestCaseSave))
     return suite
+
 
 if __name__ == '__main__':
     unittest.main(defaultTest='suite')
