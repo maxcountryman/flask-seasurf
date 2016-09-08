@@ -29,12 +29,13 @@ from werkzeug.exceptions import Forbidden
 from werkzeug.security import safe_str_cmp
 
 
-if sys.version_info[0] < 3:
-    import urlparse
-    _MAX_CSRF_KEY = long(2 << 63)
-else:
+PY3 = sys.version_info[0] >= 3
+if PY3:
     import urllib.parse as urlparse
     _MAX_CSRF_KEY = 2 << 63
+else:
+    import urlparse
+    _MAX_CSRF_KEY = long(2 << 63)
 
 
 if hasattr(random, 'SystemRandom'):
@@ -318,7 +319,10 @@ class SeaSurf(object):
         '''
         Attempts to get a token from the request cookies.
         '''
-        return getattr(_app_ctx_stack.top, self._csrf_name, None)
+        token = getattr(_app_ctx_stack.top, self._csrf_name, None)
+        if PY3 and isinstance(token, bytes):
+            return token.decode('utf8')
+        return token
 
     def _generate_token(self):
         '''
