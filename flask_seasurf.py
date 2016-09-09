@@ -25,7 +25,7 @@ import random
 from datetime import timedelta
 
 from flask import _app_ctx_stack, current_app, request, session
-from werkzeug.exceptions import Forbidden
+from werkzeug.exceptions import BadRequest, Forbidden
 from werkzeug.security import safe_str_cmp
 
 
@@ -270,8 +270,12 @@ class SeaSurf(object):
             request_csrf_token = request.form.get(self._csrf_name, '')
             if request_csrf_token == '':
                 # Check to see if the data is being sent as JSON
-                if hasattr(request, 'json') and request.json:
-                    request_csrf_token = request.json.get(self._csrf_name, '')
+                try:
+                    if hasattr(request, 'json') and request.json:
+                        request_csrf_token = request.json.get(self._csrf_name,\
+                                                                '')
+                except BadRequest:
+                    pass
 
             if request_csrf_token == '':
                 # As per the Django middleware, this makes AJAX easier and
