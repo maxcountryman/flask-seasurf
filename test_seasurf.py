@@ -142,6 +142,65 @@ class SeaSurfTestCase(unittest.TestCase):
 
             self.assertEqual(rv.status_code, 200)
 
+    def test_token_in_header(self):
+        with self.app.test_client() as client:
+            with client.session_transaction() as sess:
+                token = self.csrf._generate_token()
+                sess[self.csrf._csrf_name] = token
+
+            headers = {
+                self.csrf._csrf_header_name: token,
+            }
+
+            rv = client.post('/bar', headers=headers)
+            self.assertEqual(rv.status_code, 200, rv)
+
+            rv = client.post(u'/bar/\xf8', headers=headers)
+            self.assertEqual(rv.status_code, 200, rv)
+
+    def test_token_in_form_data(self):
+        with self.app.test_client() as client:
+            with client.session_transaction() as sess:
+                token = self.csrf._generate_token()
+                sess[self.csrf._csrf_name] = token
+
+            data = '{0}={1}'.format(self.csrf._csrf_name, token)
+            content_type = 'application/x-www-form-urlencoded'
+
+            rv = client.post('/bar', data=data, content_type=content_type)
+            self.assertEqual(rv.status_code, 200, rv)
+
+            rv = client.post(u'/bar/\xf8', data=data, content_type=content_type)
+            self.assertEqual(rv.status_code, 200, rv)
+
+    def test_invalid_json_does_not_return_400(self):
+        """Flask with Python3 raises a BadRequest anytime someone accesses
+        `request.json` with invalid JSON. Flask-Seasurf should not cause a
+        400 response when checking for a csrf token.
+        """
+        with self.app.test_client() as client:
+            with client.session_transaction() as sess:
+                token = self.csrf._generate_token()
+                sess[self.csrf._csrf_name] = token
+
+            headers = {
+                self.csrf._csrf_header_name: token,
+            }
+            data = '{]\]{'
+            content_type = 'application/json'
+
+            rv = client.post('/bar',
+                             data=data,
+                             content_type=content_type,
+                             headers=headers)
+            self.assertEqual(rv.status_code, 200, rv)
+
+            rv = client.post(u'/bar/\xf8',
+                             data=data,
+                             content_type=content_type,
+                             headers=headers)
+            self.assertEqual(rv.status_code, 200, rv)
+
     # Methods for backwards compatibility with python 2.5 & 2.6
     def assertIn(self, value, container):
         self.assertTrue(value in container)

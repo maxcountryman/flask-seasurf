@@ -273,7 +273,7 @@ class SeaSurf(object):
                 try:
                     if hasattr(request, 'json') and request.json:
                         request_csrf_token = request.json.get(self._csrf_name,\
-                                                                '')
+                                                              '')
                 except BadRequest:
                     pass
 
