@@ -274,7 +274,8 @@ class SeaSurf(object):
                     if hasattr(request, 'json') and request.json:
                         request_csrf_token = request.json.get(self._csrf_name,\
                                                               '')
-                except BadRequest:
+                # Except Attribute error if JSON data is a list
+                except (BadRequest, AttributeError):
                     pass
 
             if request_csrf_token == '':
