@@ -80,6 +80,8 @@ we use strict referer checking to prevent a man-in-the-middle attack from being
 plausible. To disable checking the Referer header, set the Flask app's config
 `CSRF_CHECK_REFERER` to `False`.
 
+.. note:: * Setting ``TESTING = True`` in config will disable the token generation! 
+          * If you are getting ``None`` as token check if ``TESTING = True`` in config.
 
 AJAX Usage
 ----------
