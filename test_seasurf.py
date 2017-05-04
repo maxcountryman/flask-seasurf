@@ -13,7 +13,19 @@ else:
     b = lambda s: s.encode('utf-8')
 
 
-class SeaSurfTestCase(unittest.TestCase):
+class BaseTestCase(unittest.TestCase):
+    # Methods for backwards compatibility with python 2.5 & 2.6
+    def assertIn(self, value, container, err=None):
+        self.assertTrue(value in container, err)
+
+    def assertNotIn(self, value, container, err=None):
+        self.assertTrue(value not in container, err)
+
+    def assertIsNotNone(self, value, err=None):
+        self.assertNotEqual(value, None, err)
+
+
+class SeaSurfTestCase(BaseTestCase):
     def setUp(self):
         app = Flask(__name__)
         app.debug = True
@@ -201,15 +213,8 @@ class SeaSurfTestCase(unittest.TestCase):
                              headers=headers)
             self.assertEqual(rv.status_code, 200, rv)
 
-    # Methods for backwards compatibility with python 2.5 & 2.6
-    def assertIn(self, value, container):
-        self.assertTrue(value in container)
 
-    def assertIsNotNone(self, value):
-        self.assertNotEqual(value, None)
-
-
-class SeaSurfTestCaseExemptViews(unittest.TestCase):
+class SeaSurfTestCaseExemptViews(BaseTestCase):
     def setUp(self):
         app = Flask(__name__)
         app.debug = True
@@ -247,7 +252,7 @@ class SeaSurfTestCaseExemptViews(unittest.TestCase):
         self.assertTrue(value in container)
 
 
-class SeaSurfTestCaseIncludeViews(unittest.TestCase):
+class SeaSurfTestCaseIncludeViews(BaseTestCase):
     def setUp(self):
         app = Flask(__name__)
         app.debug = True
@@ -293,7 +298,7 @@ class SeaSurfTestCaseIncludeViews(unittest.TestCase):
         self.assertTrue(value in container)
 
 
-class SeaSurfTestCaseExemptUrls(unittest.TestCase):
+class SeaSurfTestCaseExemptUrls(BaseTestCase):
     def setUp(self):
         app = Flask(__name__)
         app.debug = True
@@ -336,7 +341,7 @@ class SeaSurfTestCaseExemptUrls(unittest.TestCase):
         self.assertTrue(value in container)
 
 
-class SeaSurfTestCaseSave(unittest.TestCase):
+class SeaSurfTestCaseSave(BaseTestCase):
     def setUp(self):
         app = Flask(__name__)
         app.debug = True
@@ -374,7 +379,7 @@ class SeaSurfTestCaseSave(unittest.TestCase):
         self.assertTrue(value in container)
 
 
-class SeaSurfTestCaseReferer(unittest.TestCase):
+class SeaSurfTestCaseReferer(BaseTestCase):
     def setUp(self):
         app = Flask(__name__)
         app.debug = True
@@ -424,7 +429,7 @@ class SeaSurfTestCaseReferer(unittest.TestCase):
             self.assertEqual(200, rv.status_code)
 
 
-class SeaSurfTestCaseSetCookie(unittest.TestCase):
+class SeaSurfTestCaseSetCookie(BaseTestCase):
     '''
     Tests the Set-Cookie header behavior
 
