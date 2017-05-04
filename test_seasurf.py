@@ -3,7 +3,7 @@ from __future__ import with_statement
 import sys
 import unittest
 
-from flask import Flask
+from flask import Flask, render_template_string
 from flask_seasurf import SeaSurf
 
 
@@ -424,6 +424,86 @@ class SeaSurfTestCaseReferer(unittest.TestCase):
             self.assertEqual(200, rv.status_code)
 
 
+class SeaSurfTestCaseSetCookie(unittest.TestCase):
+    '''
+    Tests the Set-Cookie header behavior
+
+    SeaSurf should add the Set-Cookie header for `_csrf_name` when
+    the request does not have a matching cookie or a token is requested
+    in the template for that request.
+
+    Other requests (e.g, AJAX calls) do not require the Set-Cookie header,
+    which has the side affect of breaking caches.
+    '''
+    def setUp(self):
+        app = Flask(__name__)
+        app.debug = True
+        app.secret_key = '1234'
+        self.app = app
+
+        csrf = SeaSurf()
+        csrf._csrf_disable = False
+        self.csrf = csrf
+
+        self.csrf.init_app(app)
+
+        @app.route('/foo', methods=['GET'])
+        def foo():
+            return 'bar'
+
+        @app.route('/bar', methods=['POST'])
+        def bar():
+            return 'foo'
+
+        @app.route('/baz', methods=['GET'])
+        def baz():
+            return render_template_string('{{ csrf_token() }}')
+
+    def test_header_set_cookie(self):
+        '''
+        Test that the Set-Cookie header was passed on a new request
+        '''
+        with self.app.test_client() as client:
+            res1 = client.get('/foo')
+
+            self.assertIn(self.csrf._csrf_name,
+                          res1.headers.get('Set-Cookie', ''),
+                          'CSRF cookie should have been set if the client has no cookie')
+
+            res2 = client.get('/foo')
+
+            self.assertNotIn(self.csrf._csrf_name,
+                             res2.headers.get('Set-Cookie', ''),
+                             'CSRF cookie should not be set if the client provided a matching cookie')
+
+            res3 = client.get('/baz')
+
+            self.assertIn(self.csrf._csrf_name,
+                          res3.headers.get('Set-Cookie', ''),
+                          'CSRF cookie always be re-set if a token is requested by the template')
+
+            client.cookie_jar.clear()
+
+            res4 = client.get('/foo')
+
+            self.assertIn(self.csrf._csrf_name,
+                          res4.headers.get('Set-Cookie', ''),
+                          'CSRF cookie always be re-set if a token is requested by the template')
+
+    def test_header_set_on_post(self):
+        with self.app.test_client() as client:
+            headers = {}
+            res1 = client.post('/bar', headers=headers)
+            self.assertEqual(res1.status_code, 403)
+
+            for cookie in client.cookie_jar:
+                if cookie.name == self.csrf._csrf_name:
+                    headers[self.csrf._csrf_header_name] = cookie.value
+
+            res2 = client.post('/bar', headers=headers)
+            self.assertEqual(res2.status_code, 200)
+
+
 def suite():
     suite = unittest.TestSuite()
     suite.addTest(unittest.makeSuite(SeaSurfTestCase))
@@ -431,6 +511,7 @@ def suite():
     suite.addTest(unittest.makeSuite(SeaSurfTestCaseIncludeViews))
     suite.addTest(unittest.makeSuite(SeaSurfTestCaseExemptUrls))
     suite.addTest(unittest.makeSuite(SeaSurfTestCaseSave))
+    suite.addTest(unittest.makeSuite(SeaSurfTestCaseSetCookie))
     return suite
 
 
