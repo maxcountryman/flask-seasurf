@@ -1,4 +1,4 @@
-#Flask-SeaSurf
+# Flask-SeaSurf
 
 [![build status](https://secure.travis-ci.org/maxcountryman/flask-seasurf.png?branch=master)](https://travis-ci.org/#!/maxcountryman/flask-seasurf)
 
@@ -12,7 +12,7 @@ your application from such attacks.
 This extension is based on the excellent Django middleware.
 
 
-##Installation
+## Installation
 
 Install the extension with one of the following commands:
 
@@ -23,7 +23,7 @@ or alternatively if you have pip installed:
     $ pip install flask-seasurf
 
 
-##Usage
+## Usage
 
 Using SeaSurf is fairly straightforward. Begin by importing the extension and 
 then passing your application object back to the extension, like this:
@@ -32,6 +32,6 @@ then passing your application object back to the extension, like this:
     csrf = SeaSurf(app)
 
 
-##Documentation
+## Documentation
 
 The Sphinx-compiled documentation is available here: http://packages.python.org/Flask-SeaSurf/
