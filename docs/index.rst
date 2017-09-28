@@ -37,7 +37,7 @@ then passing your application object back to the extension, like this:
 .. code-block:: python
     
     import Flask
-    from flask.ext.seasurf import SeaSurf
+    from flask_seasurf import SeaSurf
     
     app = Flask(__name__)
     csrf = SeaSurf(app)
@@ -109,7 +109,7 @@ like so:
 
 .. code-block:: python
 
-    from flask.ext.wtf import Form, HiddenField
+    from flask_wtf import Form, HiddenField
     from flask import g
 
     # import your app here
@@ -129,7 +129,7 @@ Now assume we define a module `forms` as such:
 
 .. code-block:: python
 
-    from flask.ext.wtf import DataRequired, TextField, PasswordField, Email
+    from flask_wtf import DataRequired, TextField, PasswordField, Email
     from seasurf_form import SeaSurfForm
 
 
