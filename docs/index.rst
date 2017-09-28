@@ -3,7 +3,8 @@ Flask-SeaSurf
 
 .. module:: flask_seasurf
 
-SeaSurf is a Flask extension for preventing cross-site request forgery (CSRF). 
+SeaSurf is a Flask extension for preventing `cross-site request forgery (CSRF)
+<https://www.owasp.org/index.php/Cross-Site_Request_Forgery_(CSRF)>`_.
 
 CSRF vulnerabilities have been found in large and popular sites such as 
 YouTube. These attacks are problematic because the mechanism they use is 
