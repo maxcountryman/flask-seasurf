@@ -75,7 +75,7 @@ exempt decorator. For instance it's possible to decorate a view as shown below:
         '''This view is exempted from CSRF validation.'''
         return 'foobar'
 
-By default when a request is determinded to be secure, i.e. using HTTPS, then
+By default when a request is determined to be secure, i.e. using HTTPS, then
 we use strict referer checking to prevent a man-in-the-middle attack from being
 plausible. To disable checking the Referer header, set the Flask app's config
 `CSRF_CHECK_REFERER` to `False`.
