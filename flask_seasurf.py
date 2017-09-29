@@ -24,7 +24,8 @@ import random
 
 from datetime import timedelta
 
-from flask import _app_ctx_stack, current_app, request, session
+from flask import (_app_ctx_stack, current_app, g, has_request_context, request,
+                   session)
 from werkzeug.exceptions import BadRequest, Forbidden
 from werkzeug.security import safe_str_cmp
 
@@ -47,6 +48,7 @@ REASON_NO_REFERER = u'Referer checking failed: no referer.'
 REASON_BAD_REFERER = u'Referer checking failed: {0} does not match {1}.'
 REASON_NO_CSRF_TOKEN = u'CSRF token not set.'
 REASON_BAD_TOKEN = u'CSRF token missing or incorrect.'
+REASON_NO_REQUEST = u'CSRF validation can only happen within a request context.'
 
 
 def _same_origin(url1, url2):
@@ -107,6 +109,7 @@ class SeaSurf(object):
         self._exempt_views = set()
         self._include_views = set()
         self._exempt_urls = tuple()
+        self._disable_cookie = None
 
         if app is not None:
             self.init_app(app)
@@ -184,6 +187,105 @@ class SeaSurf(object):
         self._include_views.add(view_location)
         return view
 
+    def disable_cookie(self, callback):
+        '''
+        A decorator to programmatically disable setting the CSRF token cookie
+        on the response. The function will be passed a Flask Response object
+        for the current request.
+
+        The decorated function must return :class:`True` or :class:`False`.
+
+        Example usage of :class:`disable_cookie` might look something
+        like::
+
+            csrf = SeaSurf(app)
+
+            @csrf.disable_cookie
+            def disable_cookie(response):
+                if is_api_request():
+                    return False
+                return True
+        '''
+
+        self._disable_cookie = callback
+        return callback
+
+    def validate(self):
+        '''
+        Validates a CSRF token for the current request.
+
+        If CSRF token is invalid, stops execution and sends a Forbidden error
+        response to the client. Can be used in combination with :class:`exempt`
+        to programmatically enable CSRF protection per request.
+
+        Example usage of :class:`validate` might look something
+        like::
+
+            csrf = SeaSurf(app)
+
+            @csrf.exempt
+            @app.route('/sometimes_requires_csrf')
+            def sometimes_requires_csrf():
+                if not oauth_request():
+                    # validate csrf unless this is an OAuth request
+                    csrf.validate()
+                return render_template('sometimes_requires_csrf.html')
+        '''
+
+        if not has_request_context():
+            raise Forbidden(description=REASON_NO_REQUEST)
+
+        # Tell _after_request to still set the CSRF token cookie when this
+        # view was exemp, but validate was called manually in the view
+        g.csrf_validation_checked = True
+
+        server_csrf_token = session.get(self._csrf_name, None)
+
+        if request.is_secure and self._check_referer:
+            referer = request.headers.get('Referer')
+            if referer is None:
+                error = (REASON_NO_REFERER, request.path)
+                error = u'Forbidden ({0}): {1}'.format(*error)
+                current_app.logger.warning(error)
+                raise Forbidden(description=REASON_NO_REFERER)
+
+            # By setting the Access-Control-Allow-Origin header, browsers
+            # will let you send cross-domain AJAX requests so if there is
+            # an Origin header, the browser has already decided that it
+            # trusts this domain otherwise it would have blocked the
+            # request before it got here.
+            allowed_referer = request.headers.get('Origin') or request.url_root
+            if not _same_origin(referer, allowed_referer):
+                error = REASON_BAD_REFERER.format(referer, allowed_referer)
+                description = error
+                error = (error, request.path)
+                error = u'Forbidden ({0}): {1}'.format(*error)
+                current_app.logger.warning(error)
+                raise Forbidden(description=description)
+
+        request_csrf_token = request.form.get(self._csrf_name, '')
+        if not request_csrf_token:
+            # Check to see if the data is being sent as JSON
+            try:
+                if hasattr(request, 'json') and request.json:
+                    request_csrf_token = request.json.get(self._csrf_name, '')
+
+            # Except Attribute error if JSON data is a list
+            except (BadRequest, AttributeError):
+                pass
+
+        if not request_csrf_token:
+            # As per the Django middleware, this makes AJAX easier and
+            # PUT and DELETE possible.
+            request_csrf_token = request.headers.get(self._csrf_header_name, '')
+
+        some_none = None in (request_csrf_token, server_csrf_token)
+        if some_none or not safe_str_cmp(request_csrf_token, server_csrf_token):
+            error = (REASON_BAD_TOKEN, request.path)
+            error = u'Forbidden ({0}): {1}'.format(*error)
+            current_app.logger.warning(error)
+            raise Forbidden(description=REASON_BAD_TOKEN)
+
     def _should_use_token(self, view_func):
         '''
         Given a view function, determine whether or not we should deliver a
@@ -192,6 +294,10 @@ class SeaSurf(object):
 
         :param view_func: A view function.
         '''
+        if (hasattr(g, 'csrf_validation_checked') and
+            getattr(g, 'csrf_validation_checked')):
+            return True
+
         if view_func is None or self._type not in ('exempt', 'include'):
             return False
 
@@ -225,13 +331,13 @@ class SeaSurf(object):
         if self._csrf_disable:
             return  # don't validate for testing
 
-        csrf_token = session.get(self._csrf_name, None)
-        if not csrf_token:
+        server_csrf_token = session.get(self._csrf_name, None)
+        if not server_csrf_token:
             setattr(_app_ctx_stack.top,
                     self._csrf_name,
                     self._generate_token())
         else:
-            setattr(_app_ctx_stack.top, self._csrf_name, csrf_token)
+            setattr(_app_ctx_stack.top, self._csrf_name, server_csrf_token)
 
         # Always set this to let the response know whether or not to set the
         # CSRF token.
@@ -244,52 +350,7 @@ class SeaSurf(object):
             if not self._should_use_token(_app_ctx_stack.top._view_func):
                 return
 
-            if request.is_secure and self._check_referer:
-                referer = request.headers.get('Referer')
-                if referer is None:
-                    error = (REASON_NO_REFERER, request.path)
-                    error = u'Forbidden ({0}): {1}'.format(*error)
-                    current_app.logger.warning(error)
-                    raise Forbidden(description=REASON_NO_REFERER)
-
-                # By setting the Access-Control-Allow-Origin header, browsers
-                # will let you send cross-domain AJAX requests so if there is
-                # an Origin header, the browser has already decided that it
-                # trusts this domain otherwise it would have blocked the
-                # request before it got here.
-                allowed_referer = request.headers.get('Origin') or \
-                                  request.url_root
-                if not _same_origin(referer, allowed_referer):
-                    error = REASON_BAD_REFERER.format(referer, allowed_referer)
-                    description = error
-                    error = (error, request.path)
-                    error = u'Forbidden ({0}): {1}'.format(*error)
-                    current_app.logger.warning(error)
-                    raise Forbidden(description=description)
-
-            request_csrf_token = request.form.get(self._csrf_name, '')
-            if request_csrf_token == '':
-                # Check to see if the data is being sent as JSON
-                try:
-                    if hasattr(request, 'json') and request.json:
-                        request_csrf_token = request.json.get(self._csrf_name,\
-                                                              '')
-                # Except Attribute error if JSON data is a list
-                except (BadRequest, AttributeError):
-                    pass
-
-            if request_csrf_token == '':
-                # As per the Django middleware, this makes AJAX easier and
-                # PUT and DELETE possible.
-                request_csrf_token = \
-                    request.headers.get(self._csrf_header_name, '')
-
-            some_none = None in (request_csrf_token, csrf_token)
-            if some_none or not safe_str_cmp(request_csrf_token, csrf_token):
-                error = (REASON_BAD_TOKEN, request.path)
-                error = u'Forbidden ({0}): {1}'.format(*error)
-                current_app.logger.warning(error)
-                raise Forbidden(description=REASON_BAD_TOKEN)
+            self.validate()
 
     def _after_request(self, response):
         '''
@@ -318,6 +379,19 @@ class SeaSurf(object):
         if csrf_cookie_matches and not getattr(_app_ctx_stack.top, 'csrf_token_requested', False):
             return response
 
+        if self._disable_cookie and self._disable_cookie(response):
+            return response
+
+        self._set_csrf_cookie(response)
+        return response
+
+    def _set_csrf_cookie(self, response):
+        '''
+        Adds a csrf token cookie to the given response.
+
+        :param response: A Flask Response object.
+        '''
+
         csrf_token = getattr(_app_ctx_stack.top, self._csrf_name)
         if session.get(self._csrf_name) != csrf_token:
             session[self._csrf_name] = csrf_token
@@ -328,7 +402,6 @@ class SeaSurf(object):
                             httponly=self._csrf_httponly,
                             domain=self._csrf_domain)
         response.vary.add('Cookie')
-        return response
 
     def _get_token(self):
         '''

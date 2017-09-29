@@ -1,11 +1,18 @@
 from __future__ import with_statement
 
 import sys
-import unittest
 
-from flask import Flask, render_template_string
-from flask_seasurf import SeaSurf
+from flask import Flask, render_template_string, request
+from flask_seasurf import SeaSurf, REASON_NO_REQUEST
+from werkzeug.exceptions import Forbidden
+from werkzeug.http import parse_cookie
 
+try:
+    # Python 2.6
+    import unittest2 as unittest
+except ImportError:
+    # Python >= 2.7
+    import unittest
 
 if sys.version_info[0] < 3:
     b = lambda s: s
@@ -213,6 +220,11 @@ class SeaSurfTestCase(BaseTestCase):
                              headers=headers)
             self.assertEqual(rv.status_code, 200, rv)
 
+    def test_cannot_validate_without_request(self):
+        with self.assertRaises(Forbidden) as ex:
+            self.csrf.validate()
+        expected_exception_message = '403 Forbidden: {0}'.format(REASON_NO_REQUEST)
+        self.assertEqual(str(ex.exception), expected_exception_message)
 
 class SeaSurfTestCaseExemptViews(BaseTestCase):
     def setUp(self):
@@ -240,16 +252,24 @@ class SeaSurfTestCaseExemptViews(BaseTestCase):
             return 'foo'
 
     def test_exempt_view(self):
-        rv = self.app.test_client().post('/foo')
-        self.assertIn(b('bar'), rv.data)
+        with self.app.test_client() as c:
+            rv = c.post('/foo')
+            self.assertIn(b('bar'), rv.data)
+            cookie = self.getCookie(rv, self.csrf._csrf_name)
+            self.assertEqual(cookie, None)
 
     def test_token_validation(self):
         # should produce a logger warning
         rv = self.app.test_client().post('/bar')
         self.assertIn(b('403 Forbidden'), rv.data)
 
-    def assertIn(self, value, container):
-        self.assertTrue(value in container)
+    def getCookie(self, response, cookie_name):
+        cookies = response.headers.getlist('Set-Cookie')
+        for cookie in cookies:
+            key, value = list(parse_cookie(cookie).items())[0]
+            if key == cookie_name:
+                return value
+        return None
 
 
 class SeaSurfTestCaseIncludeViews(BaseTestCase):
@@ -294,9 +314,6 @@ class SeaSurfTestCaseIncludeViews(BaseTestCase):
         rv = self.app.test_client().post(u'/bar/\xf8')
         self.assertIn(b('foo'), rv.data)
 
-    def assertIn(self, value, container):
-        self.assertTrue(value in container)
-
 
 class SeaSurfTestCaseExemptUrls(BaseTestCase):
     def setUp(self):
@@ -329,16 +346,133 @@ class SeaSurfTestCaseExemptUrls(BaseTestCase):
     def test_exempt_view(self):
         rv = self.app.test_client().post('/foo/baz')
         self.assertIn(b('bar'), rv.data)
-        rv = self.app.test_client().post('/foo/quz')
-        self.assertIn(b('bar'), rv.data)
+        with self.app.test_client() as c:
+            rv = c.post('/foo/quz')
+            self.assertIn(b('bar'), rv.data)
+            cookie = self.getCookie(rv, self.csrf._csrf_name)
+            self.assertEqual(cookie, None)
 
     def test_token_validation(self):
-        # should produce a logger warning
-        rv = self.app.test_client().post('/bar')
-        self.assertIn(b('403 Forbidden'), rv.data)
+        with self.app.test_client() as c:
+            # should produce a logger warning
+            rv = c.post('/bar')
+            self.assertIn(b('403 Forbidden'), rv.data)
+            cookie = self.getCookie(rv, self.csrf._csrf_name)
+            token = self.csrf._get_token()
+            self.assertEqual(cookie, token)
 
-    def assertIn(self, value, container):
-        self.assertTrue(value in container)
+    def getCookie(self, response, cookie_name):
+        cookies = response.headers.getlist('Set-Cookie')
+        for cookie in cookies:
+            key, value = list(parse_cookie(cookie).items())[0]
+            if key == cookie_name:
+                return value
+        return None
+
+
+class SeaSurfTestCaseDisableCookie(unittest.TestCase):
+    def setUp(self):
+        app = Flask(__name__)
+        app.debug = True
+        app.secret_key = '1234'
+
+        self.app = app
+
+        csrf = SeaSurf()
+        csrf._csrf_disable = False
+        self.csrf = csrf
+
+        # Initialize CSRF protection.
+        self.csrf.init_app(app)
+
+        @self.csrf.disable_cookie
+        def disable_cookie(response):
+            if request.path == '/foo/baz':
+                return True
+            if request.path == '/manual':
+                return True
+            return False
+
+        @app.route('/foo/baz', methods=['GET'])
+        def foobaz():
+            return 'bar'
+
+        @app.route('/foo/quz', methods=['GET'])
+        def fooquz():
+            return 'bar'
+
+        @csrf.exempt
+        @app.route('/manual', methods=['POST'])
+        def manual():
+            csrf.validate()
+            return 'bar'
+
+    def test_has_csrf_cookie(self):
+        with self.app.test_client() as c:
+            rv = c.get('/foo/quz')
+            self.assertIn(b('bar'), rv.data)
+            cookie = self.getCookie(rv, self.csrf._csrf_name)
+            token = self.csrf._get_token()
+            self.assertEqual(cookie, token)
+
+    def test_no_csrf_cookie(self):
+        with self.app.test_client() as c:
+            rv = c.get('/foo/baz')
+            cookie = self.getCookie(rv, self.csrf._csrf_name)
+            self.assertEqual(cookie, None)
+
+    def test_no_csrf_cookie_even_after_manually_validated(self):
+        with self.app.test_client() as c:
+            rv = c.post('/manual')
+            self.assertIn(b('403 Forbidden'), rv.data)
+            cookie = self.getCookie(rv, self.csrf._csrf_name)
+            self.assertEqual(cookie, None)
+
+    def getCookie(self, response, cookie_name):
+        cookies = response.headers.getlist('Set-Cookie')
+        for cookie in cookies:
+            key, value = list(parse_cookie(cookie).items())[0]
+            if key == cookie_name:
+                return value
+        return None
+
+
+class SeaSurfTestManualValidation(unittest.TestCase):
+    def setUp(self):
+        app = Flask(__name__)
+        app.debug = True
+        app.secret_key = '1234'
+
+        self.app = app
+
+        csrf = SeaSurf()
+        csrf._csrf_disable = False
+        self.csrf = csrf
+
+        # Initialize CSRF protection.
+        self.csrf.init_app(app)
+
+        @csrf.exempt
+        @app.route('/manual', methods=['POST'])
+        def manual():
+            csrf.validate()
+            return 'bar'
+
+    def test_can_manually_validate_exempt_views(self):
+        with self.app.test_client() as c:
+            rv = c.post('/manual')
+            self.assertIn(b('403 Forbidden'), rv.data)
+            cookie = self.getCookie(rv, self.csrf._csrf_name)
+            token = self.csrf._get_token()
+            self.assertEqual(cookie, token)
+
+    def getCookie(self, response, cookie_name):
+        cookies = response.headers.getlist('Set-Cookie')
+        for cookie in cookies:
+            key, value = list(parse_cookie(cookie).items())[0]
+            if key == cookie_name:
+                return value
+        return None
 
 
 class SeaSurfTestCaseSave(BaseTestCase):
@@ -374,9 +508,6 @@ class SeaSurfTestCaseSave(BaseTestCase):
             rv = client.get('/foo')
             self.assertIn(b('bar'), rv.data)
             self.assertEqual(rv.headers['X-Session-Modified'], 'False')
-
-    def assertIn(self, value, container):
-        self.assertTrue(value in container)
 
 
 class SeaSurfTestCaseReferer(BaseTestCase):
@@ -515,8 +646,11 @@ def suite():
     suite.addTest(unittest.makeSuite(SeaSurfTestCaseExemptViews))
     suite.addTest(unittest.makeSuite(SeaSurfTestCaseIncludeViews))
     suite.addTest(unittest.makeSuite(SeaSurfTestCaseExemptUrls))
+    suite.addTest(unittest.makeSuite(SeaSurfTestCaseDisableCookie))
     suite.addTest(unittest.makeSuite(SeaSurfTestCaseSave))
     suite.addTest(unittest.makeSuite(SeaSurfTestCaseSetCookie))
+    suite.addTest(unittest.makeSuite(SeaSurfTestCaseReferer))
+    suite.addTest(unittest.makeSuite(SeaSurfTestManualValidation))
     return suite
 
 
