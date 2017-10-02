@@ -14,6 +14,11 @@ except ImportError:
     # Python >= 2.7
     import unittest
 
+try:
+    from unittest import mock
+except ImportError:
+    import mock
+
 if sys.version_info[0] < 3:
     b = lambda s: s
 else:
@@ -225,6 +230,17 @@ class SeaSurfTestCase(BaseTestCase):
             self.csrf.validate()
         expected_exception_message = '403 Forbidden: {0}'.format(REASON_NO_REQUEST)
         self.assertEqual(str(ex.exception), expected_exception_message)
+
+    def test_generate_token(self):
+        try:
+            import secrets
+            with mock.patch('secrets.token_hex', return_value='3b0b5a5c1de3c2ed'):
+                self.assertEqual(self.csrf._generate_token(), '3b0b5a5c1de3c2ed')
+        except ImportError:
+            with mock.patch('random.randrange', return_value=4123476):
+                with mock.patch('random.SystemRandom.randrange', return_value=4123476):
+                    self.assertEqual(self.csrf._generate_token(), 'a22372bcac286ccf659ddda312e6311149edd6b0')
+
 
 class SeaSurfTestCaseExemptViews(BaseTestCase):
     def setUp(self):
