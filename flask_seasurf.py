@@ -424,7 +424,12 @@ class SeaSurf(object):
 
     def _generate_token(self):
         '''
-        Generates a token with randomly salted SHA1. Returns a string.
+        Generates a token using PEP 506 secrets module (if available), or falling back to a SHA1-salted random.
         '''
-        salt = str(randrange(0, _MAX_CSRF_KEY)).encode('utf-8')
-        return hashlib.sha1(salt).hexdigest()
+        try:
+            # use PEP 506 secrets module
+            import secrets
+            return secrets.token_hex()
+        except ImportError:
+            salt = str(randrange(0, _MAX_CSRF_KEY)).encode('utf-8')
+            return hashlib.sha1(salt).hexdigest()
