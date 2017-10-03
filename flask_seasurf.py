@@ -40,9 +40,14 @@ else:
 
 
 if hasattr(random, 'SystemRandom'):
-    randrange = random.SystemRandom().randrange
+    random = random.SystemRandom()
 else:
-    randrange = random.randrange
+    random = random
+
+try:
+    import secrets
+except ImportError:
+    secrets = None
 
 REASON_NO_REFERER = u'Referer checking failed: no referer.'
 REASON_BAD_REFERER = u'Referer checking failed: {0} does not match {1}.'
@@ -424,7 +429,11 @@ class SeaSurf(object):
 
     def _generate_token(self):
         '''
-        Generates a token with randomly salted SHA1. Returns a string.
+        Generates a token using PEP 506 secrets module (if available), or falling back to a SHA1-salted random.
         '''
-        salt = str(randrange(0, _MAX_CSRF_KEY)).encode('utf-8')
-        return hashlib.sha1(salt).hexdigest()
+        if secrets:
+            # use PEP 506 secrets module
+            return secrets.token_hex()
+        else:
+            salt = str(random.randrange(0, _MAX_CSRF_KEY)).encode('utf-8')
+            return hashlib.sha1(salt).hexdigest()
