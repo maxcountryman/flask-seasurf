@@ -292,6 +292,17 @@ class SeaSurf(object):
             current_app.logger.warning(error)
             raise Forbidden(description=REASON_BAD_TOKEN)
 
+    def generate_new_token(self):
+        '''
+        Delete current CSRF token and generate a new CSRF token.  This function
+        should only be called inside a view function to avoid conflicts with
+        other operations that this library performs during the request context
+        '''
+        new_csrf_token = self._generate_token()
+
+        session[self._csrf_name] = new_csrf_token
+        setattr(_app_ctx_stack.top, self._csrf_name, new_csrf_token)
+
     def _should_use_token(self, view_func):
         '''
         Given a view function, determine whether or not we should deliver a

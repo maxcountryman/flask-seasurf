@@ -656,6 +656,49 @@ class SeaSurfTestCaseSetCookie(BaseTestCase):
             self.assertEqual(res2.status_code, 200)
 
 
+class SeaSurfTestCaseGenerateNewToken(BaseTestCase):
+    def setUp(self):
+        app = Flask(__name__)
+        app.debug = True
+        app.secret_key = '1234'
+        self.app = app
+
+        csrf = SeaSurf()
+        csrf._csrf_disable = False
+        self.csrf = csrf
+
+        # Initialize CSRF protection.
+        self.csrf.init_app(app)
+
+        @app.route('/foo', methods=['GET'])
+        def foo(term=None):
+            return 'bar'
+
+        @app.route('/bar', methods=['POST'])
+        def bar(term=None):
+            self.csrf.generate_new_token()
+            return 'foo'
+
+    def test_generate_new_token(self):
+        with self.app.test_client() as client:
+            res1 = client.get('/foo')
+            tokenA = self.csrf._get_token()
+
+            client.set_cookie('www.example.com', self.csrf._csrf_name, tokenA)
+            with client.session_transaction() as sess:
+                sess[self.csrf._csrf_name] = tokenA
+
+            data = {'_csrf_token': tokenA}
+            rv = client.post('/bar', data=data)
+            tokenB = self.csrf._get_token()
+
+            self.assertEqual(rv.status_code, 200, rv)
+            self.assertNotEqual(tokenA, tokenB)
+            self.assertIn(tokenB,
+                          rv.headers.get('Set-Cookie', ''),
+                          'CSRF cookie should have been set to the new token')
+
+
 def suite():
     suite = unittest.TestSuite()
     suite.addTest(unittest.makeSuite(SeaSurfTestCase))
@@ -667,6 +710,7 @@ def suite():
     suite.addTest(unittest.makeSuite(SeaSurfTestCaseSetCookie))
     suite.addTest(unittest.makeSuite(SeaSurfTestCaseReferer))
     suite.addTest(unittest.makeSuite(SeaSurfTestManualValidation))
+    suite.addTest(unittest.makeSuite(SeaSurfTestCaseGenerateNewToken))
     return suite
 
 
