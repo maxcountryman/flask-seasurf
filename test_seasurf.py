@@ -655,6 +655,17 @@ class SeaSurfTestCaseSetCookie(BaseTestCase):
             res2 = client.post('/bar', headers=headers)
             self.assertEqual(res2.status_code, 200)
 
+    def test_header_set_cookie_samesite(self):
+        samesite = 'Strict'
+        self.app.config['CSRF_COOKIE_SAMESITE'] = samesite
+        self.csrf.init_app(self.app)
+
+        with self.app.test_client() as client:
+            res = client.get('/foo')
+            cookie = res.headers.get('Set-Cookie')
+            c = parse_cookie(cookie)
+            self.assertEqual(c['SameSite'], samesite)
+
 
 def suite():
     suite = unittest.TestSuite()
