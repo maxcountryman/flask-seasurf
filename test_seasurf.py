@@ -453,6 +453,81 @@ class SeaSurfTestCaseDisableCookie(unittest.TestCase):
         return None
 
 
+class SeaSurfTestCaseSkipValidation(unittest.TestCase):
+    def setUp(self):
+        app = Flask(__name__)
+        app.debug = True
+        app.secret_key = '1234'
+
+        self.app = app
+
+        csrf = SeaSurf()
+        csrf._csrf_disable = False
+        self.csrf = csrf
+
+        # Initialize CSRF protection.
+        self.csrf.init_app(app)
+
+        @self.csrf.skip_validation
+        def skip_validation(request):
+            if request.path == '/foo/quz':
+                return True
+            if request.path == '/manual':
+                return True
+            return False
+
+        @app.route('/foo/baz', methods=['GET'])
+        def get_foobaz():
+            return 'bar'
+
+        @app.route('/foo/baz', methods=['DELETE'])
+        def foobaz():
+            return 'bar'
+
+        @app.route('/foo/quz', methods=['POST'])
+        def fooquz():
+            return 'bar'
+
+        @app.route('/manual', methods=['POST'])
+        def manual():
+            csrf.validate()
+            return 'bar'
+
+    def test_skips_validation(self):
+        with self.app.test_client() as c:
+            rv = c.post('/foo/quz')
+            self.assertIn(b('bar'), rv.data)
+            cookie = self.getCookie(rv, self.csrf._csrf_name)
+            token = self.csrf._get_token()
+            self.assertEqual(cookie, token)
+
+    def test_enforces_validation_reject(self):
+        with self.app.test_client() as c:
+            rv = c.delete('/foo/baz')
+            self.assertIn(b('403 Forbidden'), rv.data)
+
+    def test_enforces_validation_accept(self):
+        with self.app.test_client() as c:
+            # GET generates CSRF token
+            c.get('/foo/baz')
+            rv = c.delete('/foo/baz',
+                          headers={'X-CSRFToken': self.csrf._get_token()})
+            self.assertIn(b('bar'), rv.data)
+
+    def test_manual_validation(self):
+        with self.app.test_client() as c:
+            rv = c.post('/manual')
+            self.assertIn(b('403 Forbidden'), rv.data)
+
+    def getCookie(self, response, cookie_name):
+        cookies = response.headers.getlist('Set-Cookie')
+        for cookie in cookies:
+            key, value = list(parse_cookie(cookie).items())[0]
+            if key == cookie_name:
+                return value
+        return None
+
+
 class SeaSurfTestManualValidation(unittest.TestCase):
     def setUp(self):
         app = Flask(__name__)
@@ -674,6 +749,7 @@ def suite():
     suite.addTest(unittest.makeSuite(SeaSurfTestCaseIncludeViews))
     suite.addTest(unittest.makeSuite(SeaSurfTestCaseExemptUrls))
     suite.addTest(unittest.makeSuite(SeaSurfTestCaseDisableCookie))
+    suite.addTest(unittest.makeSuite(SeaSurfTestCaseSkipValidation))
     suite.addTest(unittest.makeSuite(SeaSurfTestCaseSave))
     suite.addTest(unittest.makeSuite(SeaSurfTestCaseSetCookie))
     suite.addTest(unittest.makeSuite(SeaSurfTestCaseReferer))

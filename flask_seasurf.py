@@ -115,6 +115,7 @@ class SeaSurf(object):
         self._include_views = set()
         self._exempt_urls = tuple()
         self._disable_cookie = None
+        self._skip_validation = None
 
         if app is not None:
             self.init_app(app)
@@ -215,6 +216,29 @@ class SeaSurf(object):
         '''
 
         self._disable_cookie = callback
+        return callback
+
+    def skip_validation(self, callback):
+        '''
+        A decorator to programmatically disable validating the CSRF token
+        cookie on the request. The function will be passed a Flask Request
+        object for the current request.
+
+        The decorated function must return :class:`True` or :class:`False`.
+
+        Example usage of :class:`skip_validation` might look something
+        like::
+
+            csrf = SeaSurf(app)
+
+            @csrf.skip_validation
+            def skip_validation(request):
+                if is_api_request():
+                    return False
+                return True
+        '''
+
+        self._skip_validation = callback
         return callback
 
     def validate(self):
@@ -355,6 +379,9 @@ class SeaSurf(object):
             # Retrieve the view function based on the request endpoint and
             # then compare it to the set of exempted views
             if not self._should_use_token(_app_ctx_stack.top._view_func):
+                return
+
+            if self._skip_validation and self._skip_validation(request):
                 return
 
             self.validate()
