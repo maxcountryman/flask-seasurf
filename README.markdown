@@ -34,4 +34,4 @@ then passing your application object back to the extension, like this:
 
 ## Documentation
 
-The Sphinx-compiled documentation is available here: http://packages.python.org/Flask-SeaSurf/
+The Sphinx-compiled documentation is available here: https://flask-seasurf.readthedocs.io/
