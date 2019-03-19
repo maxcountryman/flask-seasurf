@@ -522,8 +522,8 @@ class SeaSurfTestCaseSkipValidation(unittest.TestCase):
     def getCookie(self, response, cookie_name):
         cookies = response.headers.getlist('Set-Cookie')
         for cookie in cookies:
-            key, value = list(parse_cookie(cookie).items())[0]
-            if key == cookie_name:
+            value = parse_cookie(cookie).get(cookie_name)
+            if value:
                 return value
         return None
 
