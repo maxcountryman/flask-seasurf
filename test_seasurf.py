@@ -25,6 +25,15 @@ else:
     b = lambda s: s.encode('utf-8')
 
 
+def get_cookie(response, cookie_name):
+    cookies = response.headers.getlist('Set-Cookie')
+    for cookie in cookies:
+        value = parse_cookie(cookie).get(cookie_name)
+        if value:
+            return value
+    return None
+
+
 class BaseTestCase(unittest.TestCase):
     # Methods for backwards compatibility with python 2.5 & 2.6
     def assertIn(self, value, container, err=None):
@@ -271,21 +280,13 @@ class SeaSurfTestCaseExemptViews(BaseTestCase):
         with self.app.test_client() as c:
             rv = c.post('/foo')
             self.assertIn(b('bar'), rv.data)
-            cookie = self.getCookie(rv, self.csrf._csrf_name)
+            cookie = get_cookie(rv, self.csrf._csrf_name)
             self.assertEqual(cookie, None)
 
     def test_token_validation(self):
         # should produce a logger warning
         rv = self.app.test_client().post('/bar')
         self.assertIn(b('403 Forbidden'), rv.data)
-
-    def getCookie(self, response, cookie_name):
-        cookies = response.headers.getlist('Set-Cookie')
-        for cookie in cookies:
-            value = parse_cookie(cookie).get(cookie_name)
-            if value:
-                return value
-        return None
 
 
 class SeaSurfTestCaseIncludeViews(BaseTestCase):
@@ -365,7 +366,7 @@ class SeaSurfTestCaseExemptUrls(BaseTestCase):
         with self.app.test_client() as c:
             rv = c.post('/foo/quz')
             self.assertIn(b('bar'), rv.data)
-            cookie = self.getCookie(rv, self.csrf._csrf_name)
+            cookie = get_cookie(rv, self.csrf._csrf_name)
             self.assertEqual(cookie, None)
 
     def test_token_validation(self):
@@ -373,17 +374,9 @@ class SeaSurfTestCaseExemptUrls(BaseTestCase):
             # should produce a logger warning
             rv = c.post('/bar')
             self.assertIn(b('403 Forbidden'), rv.data)
-            cookie = self.getCookie(rv, self.csrf._csrf_name)
+            cookie = get_cookie(rv, self.csrf._csrf_name)
             token = self.csrf._get_token()
             self.assertEqual(cookie, token)
-
-    def getCookie(self, response, cookie_name):
-        cookies = response.headers.getlist('Set-Cookie')
-        for cookie in cookies:
-            value = parse_cookie(cookie).get(cookie_name)
-            if value:
-                return value
-        return None
 
 
 class SeaSurfTestCaseDisableCookie(unittest.TestCase):
@@ -427,30 +420,22 @@ class SeaSurfTestCaseDisableCookie(unittest.TestCase):
         with self.app.test_client() as c:
             rv = c.get('/foo/quz')
             self.assertIn(b('bar'), rv.data)
-            cookie = self.getCookie(rv, self.csrf._csrf_name)
+            cookie = get_cookie(rv, self.csrf._csrf_name)
             token = self.csrf._get_token()
             self.assertEqual(cookie, token)
 
     def test_no_csrf_cookie(self):
         with self.app.test_client() as c:
             rv = c.get('/foo/baz')
-            cookie = self.getCookie(rv, self.csrf._csrf_name)
+            cookie = get_cookie(rv, self.csrf._csrf_name)
             self.assertEqual(cookie, None)
 
     def test_no_csrf_cookie_even_after_manually_validated(self):
         with self.app.test_client() as c:
             rv = c.post('/manual')
             self.assertIn(b('403 Forbidden'), rv.data)
-            cookie = self.getCookie(rv, self.csrf._csrf_name)
+            cookie = get_cookie(rv, self.csrf._csrf_name)
             self.assertEqual(cookie, None)
-
-    def getCookie(self, response, cookie_name):
-        cookies = response.headers.getlist('Set-Cookie')
-        for cookie in cookies:
-            value = parse_cookie(cookie).get(cookie_name)
-            if value:
-                return value
-        return None
 
 
 class SeaSurfTestCaseSkipValidation(unittest.TestCase):
@@ -497,7 +482,7 @@ class SeaSurfTestCaseSkipValidation(unittest.TestCase):
         with self.app.test_client() as c:
             rv = c.post('/foo/quz')
             self.assertIn(b('bar'), rv.data)
-            cookie = self.getCookie(rv, self.csrf._csrf_name)
+            cookie = get_cookie(rv, self.csrf._csrf_name)
             token = self.csrf._get_token()
             self.assertEqual(cookie, token)
 
@@ -518,14 +503,6 @@ class SeaSurfTestCaseSkipValidation(unittest.TestCase):
         with self.app.test_client() as c:
             rv = c.post('/manual')
             self.assertIn(b('403 Forbidden'), rv.data)
-
-    def getCookie(self, response, cookie_name):
-        cookies = response.headers.getlist('Set-Cookie')
-        for cookie in cookies:
-            value = parse_cookie(cookie).get(cookie_name)
-            if value:
-                return value
-        return None
 
 
 class SeaSurfTestManualValidation(unittest.TestCase):
@@ -553,17 +530,9 @@ class SeaSurfTestManualValidation(unittest.TestCase):
         with self.app.test_client() as c:
             rv = c.post('/manual')
             self.assertIn(b('403 Forbidden'), rv.data)
-            cookie = self.getCookie(rv, self.csrf._csrf_name)
+            cookie = get_cookie(rv, self.csrf._csrf_name)
             token = self.csrf._get_token()
             self.assertEqual(cookie, token)
-
-    def getCookie(self, response, cookie_name):
-        cookies = response.headers.getlist('Set-Cookie')
-        for cookie in cookies:
-            value = parse_cookie(cookie).get(cookie_name)
-            if value:
-                return value
-        return None
 
 
 class SeaSurfTestCaseSave(BaseTestCase):
