@@ -63,10 +63,13 @@ def _same_origin(url1, url2):
     :param url1: The first URL to compare.
     :param url2: The second URL to compare.
     '''
-    p1, p2 = urlparse.urlparse(url1), urlparse.urlparse(url2)
-    origin1 = p1.scheme, p1.hostname, p1.port
-    origin2 = p2.scheme, p2.hostname, p2.port
-    return origin1 == origin2
+    try:
+        p1, p2 = urlparse.urlparse(url1), urlparse.urlparse(url2)
+        origin1 = p1.scheme, p1.hostname, p1.port
+        origin2 = p2.scheme, p2.hostname, p2.port
+        return origin1 == origin2
+    except ValueError:
+        return False
 
 
 class SeaSurf(object):
