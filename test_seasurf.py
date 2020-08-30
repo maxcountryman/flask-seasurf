@@ -175,6 +175,21 @@ class SeaSurfTestCase(BaseTestCase):
 
             self.assertEqual(rv.status_code, 200)
 
+    def test_malformed_referer(self):
+        with self.app.test_client() as client:
+            with client.session_transaction() as sess:
+                token = self.csrf._generate_token()
+
+                client.set_cookie('www.example.com', self.csrf._csrf_name, token)
+                sess[self.csrf._csrf_name] = token
+
+            rv = client.post('/bar',
+                data={self.csrf._csrf_name: token},
+                base_url='https://www.example.com',
+                headers={'Referer': u'https://foobar:abc'})
+
+            self.assertEqual(403, rv.status_code)
+
     def test_token_in_header(self):
         with self.app.test_client() as client:
             with client.session_transaction() as sess:
