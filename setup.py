@@ -6,7 +6,7 @@ this_directory = os.path.dirname(__file__)
 module_path = os.path.join(this_directory, 'flask_seasurf.py')
 version_line = [line for line in open(module_path)
                 if line.startswith('__version_info__')][0]
-with open(os.path.join(this_directory, 'README.markdown'), encoding='utf-8') as f:
+with open(os.path.join(this_directory, 'README.markdown')) as f:
     long_description = f.read()
 
 __version__ = '.'.join(eval(version_line.split('__version_info__ = ')[-1]))
