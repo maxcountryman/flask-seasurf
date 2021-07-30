@@ -70,7 +70,7 @@ be added to the Flask app's config:
      - `False`
      
    * - `CSRF_COOKIE_PATH`
-     - 
+     - Indicates a URL path that must exist in the requested URL in order to send the Cookie header
      - `'/'`
      
    * - `CSRF_COOKIE_DOMAIN`
@@ -95,7 +95,7 @@ be added to the Flask app's config:
      
    * - `SEASURF_INCLUDE_OR_EXEMPT_VIEWS`
      - Possible values: `'exempt'`, `'include'`. 
-     - `'exempt'``
+     - `'exempt'`
 
 All the values prefixed with `CSRF_COOKIE_` are passed verbatim to the `Response.set_cookie
 <http://flask.pocoo.org/docs/0.12/api/#flask.Response.set_cookie>`_ method.
