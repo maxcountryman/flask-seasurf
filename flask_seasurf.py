@@ -78,7 +78,7 @@ class SeaSurf(object):
     this extension is to generate and validate CSRF tokens. The design and
     implementation of this extension is influenced by Django's CSRF middleware.
 
-    Tokens are generated using a salted SHA1 hash. The salt is based off a
+    Tokens are generated using a salted SHA1 hash. The salt is based off
     a random range. The OS's SystemRandom is used if available, otherwise
     the core random.randrange is used.
 
@@ -180,7 +180,7 @@ class SeaSurf(object):
 
     def include(self, view):
         '''
-        A decorator that can be used to include a view from CSRF validation.
+        A decorator that can be used to include a view in CSRF validation.
 
         Example usage of :class:`include` might look something like this::
 
