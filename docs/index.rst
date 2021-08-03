@@ -43,18 +43,61 @@ then passing your application object back to the extension, like this:
     csrf = SeaSurf(app)
 
 This extension is configurable via a set of configuration variables which can
-be added to the Flask app's config file:
+be added to the Flask app's config:
 
-- `CSRF_COOKIE_NAME` for the cookie name
-- `CSRF_COOKIE_TIMEOUT` for the cookie timeout
-- `CSRF_COOKIE_HTTPONLY` for setting the cookie HTTPOnly flag
-- `CSRF_COOKIE_SECURE` for setting the cookie secure flag
-- `CSRF_COOKIE_PATH` for setting the cookie path
-- `CSRF_COOKIE_DOMAIN` for setting the cookie domain
-- `CSRF_COOKIE_SAMESITE` for setting the cookie samesite
-- `CSRF_DISABLE` to disable CSRF prevention
+.. list-table:: Title
+   :widths: 25 50 25
+   :header-rows: 1
+   
+   * - Variable name
+     - Description
+     - Default   
+     
+   * - `CSRF_COOKIE_NAME`
+     - The cookie name, also used as the session variable name.
+     - `'_csrf_token'`
+     
+   * - `CSRF_COOKIE_TIMEOUT`
+     - After what time the cookie expires. 
+     - `timedelta(days=5)`
+     
+   * - `CSRF_COOKIE_SECURE`
+     - Whether the cookie is required to be transferred over a secure connection. 
+     - `False`
+     
+   * - `CSRF_COOKIE_HTTPONLY`
+     - HttpOnly flag of the cookie. Whether it can be read by JS.
+     - `False`
+     
+   * - `CSRF_COOKIE_PATH`
+     - Indicates a URL path that must exist in the requested URL in order to send the Cookie header
+     - `'/'`
+     
+   * - `CSRF_COOKIE_DOMAIN`
+     - Setting the cookie domain.
+     - `None`
+     
+   * - `CSRF_COOKIE_SAMESITE`
+     - Setting the cookie SameSite policy.
+     - `'Lax'`
+     
+   * - `CSRF_CHECK_REFERER`
+     - Enable checking the `Referer` header.
+     - True
+     
+   * - `CSRF_DISABLE`
+     - Disables CSRF protection globally. 
+     - `False` unless `app.config['TESTING']` is set to `True`
+     
+   * - `CSRF_HEADER_NAME`
+     - The header that would contain the token. 
+     - `'X-CSRFToken'`
+     
+   * - `SEASURF_INCLUDE_OR_EXEMPT_VIEWS`
+     - Possible values: `'exempt'`, `'include'`. 
+     - `'exempt'`
 
-Except for the last option, all values are passed verbatim to the `Response.set_cookie
+All the values prefixed with `CSRF_COOKIE_` are passed verbatim to the `Response.set_cookie
 <http://flask.pocoo.org/docs/0.12/api/#flask.Response.set_cookie>`_ method.
 
 Corresponding code will need to be added to the templates where `POST`, `PUT`,
