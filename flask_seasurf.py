@@ -27,7 +27,11 @@ from datetime import timedelta
 from flask import (_app_ctx_stack, current_app, g, has_request_context, request,
                    session)
 from werkzeug.exceptions import BadRequest, Forbidden
-from werkzeug.security import safe_str_cmp
+
+try:
+    from hmac import compare_digest as safe_str_cmp
+except ImportError:
+    from werkzeug.security import safe_str_cmp
 
 
 PY3 = sys.version_info[0] >= 3
