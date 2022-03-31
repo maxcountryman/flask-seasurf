@@ -19,6 +19,7 @@ __copyright__ = '(c) 2011 by Max Countryman'
 __all__ = ['SeaSurf']
 
 import sys
+import hmac
 import hashlib
 import random
 
@@ -27,7 +28,6 @@ from datetime import timedelta
 from flask import (_app_ctx_stack, current_app, g, has_request_context, request,
                    session)
 from werkzeug.exceptions import BadRequest, Forbidden
-from werkzeug.security import safe_str_cmp
 
 
 PY3 = sys.version_info[0] >= 3
@@ -314,7 +314,7 @@ class SeaSurf(object):
             request_csrf_token = request.headers.get(self._csrf_header_name, '')
 
         some_none = None in (request_csrf_token, server_csrf_token)
-        if some_none or not safe_str_cmp(request_csrf_token, server_csrf_token):
+        if some_none or not hmac.compare_digest(request_csrf_token, server_csrf_token):
             error = (REASON_BAD_TOKEN, request.path)
             error = u'Forbidden ({0}): {1}'.format(*error)
             current_app.logger.warning(error)
