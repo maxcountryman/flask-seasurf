@@ -440,6 +440,54 @@ class SeaSurfTestCaseDisableCookie(unittest.TestCase):
             self.assertEqual(cookie, None)
 
 
+class SeaSurfTestCaseEnableCookie(unittest.TestCase):
+    def setUp(self):
+        app = Flask(__name__)
+        app.debug = True
+        app.secret_key = '1234'
+
+        self.app = app
+
+        csrf = SeaSurf()
+        csrf._csrf_disable = False
+        self.csrf = csrf
+
+        # Initialize CSRF protection.
+        self.csrf.init_app(app)
+
+        @csrf.exempt
+        @app.route('/exempt', methods=['GET', 'POST'])
+        def exempt():
+            return 'exempt'
+
+        @csrf.exempt
+        @csrf.set_cookie
+        @app.route('/exempt_with_cookie', methods=['GET', 'POST'])
+        def exempt_with_cookie():
+            return 'exempt_with_cookie'
+
+    def test_no_csrf_cookie(self):
+        with self.app.test_client() as c:
+            rv = c.get('/exempt')
+            cookie = get_cookie(rv, self.csrf._csrf_name)
+            self.assertEqual(cookie, None)
+
+    def test_has_csrf_cookie(self):
+        with self.app.test_client() as c:
+            rv = c.post('/exempt_with_cookie')
+            cookie = get_cookie(rv, self.csrf._csrf_name)
+            token = self.csrf._get_token()
+            self.assertEqual(cookie, token)
+
+    def test_has_csrf_cookie_but_doesnt_validate(self):
+        with self.app.test_client() as c:
+            rv = c.post('/exempt_with_cookie')
+            self.assertIn(b('exempt_with_cookie'), rv.data)
+            cookie = get_cookie(rv, self.csrf._csrf_name)
+            token = self.csrf._get_token()
+            self.assertEqual(cookie, token)
+
+
 class SeaSurfTestCaseSkipValidation(unittest.TestCase):
     def setUp(self):
         app = Flask(__name__)
@@ -763,6 +811,7 @@ def suite():
     suite.addTest(unittest.makeSuite(SeaSurfTestCaseIncludeViews))
     suite.addTest(unittest.makeSuite(SeaSurfTestCaseExemptUrls))
     suite.addTest(unittest.makeSuite(SeaSurfTestCaseDisableCookie))
+    suite.addTest(unittest.makeSuite(SeaSurfTestCaseEnableCookie))
     suite.addTest(unittest.makeSuite(SeaSurfTestCaseSkipValidation))
     suite.addTest(unittest.makeSuite(SeaSurfTestCaseSave))
     suite.addTest(unittest.makeSuite(SeaSurfTestCaseSetCookie))
