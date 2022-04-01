@@ -18,10 +18,11 @@ __license__ = 'BSD'
 __copyright__ = '(c) 2011 by Max Countryman'
 __all__ = ['SeaSurf']
 
+import calendar
 import hashlib
 import random
 
-from datetime import timedelta
+from datetime import datetime, timedelta
 import urllib.parse as urlparse
 
 from flask import (_app_ctx_stack, current_app, g, has_request_context, request,
@@ -441,9 +442,11 @@ class SeaSurf(object):
         csrf_token = getattr(_app_ctx_stack.top, self._csrf_name)
         if session.get(self._csrf_name) != csrf_token:
             session[self._csrf_name] = csrf_token
+        expires_at = datetime.utcnow() + self._csrf_timeout
         response.set_cookie(self._csrf_name,
                             csrf_token,
                             max_age=self._csrf_timeout,
+                            expires=calendar.timegm(expires_at.utctimetuple()),
                             secure=self._csrf_secure,
                             httponly=self._csrf_httponly,
                             path=self._csrf_path,
