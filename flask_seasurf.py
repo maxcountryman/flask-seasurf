@@ -18,11 +18,11 @@ __license__ = 'BSD'
 __copyright__ = '(c) 2011 by Max Countryman'
 __all__ = ['SeaSurf']
 
-import sys
 import hashlib
 import random
 
 from datetime import timedelta
+import urllib.parse as urlparse
 
 from flask import (_app_ctx_stack, current_app, g, has_request_context, request,
                    session)
@@ -34,13 +34,7 @@ except ImportError:
     from werkzeug.security import safe_str_cmp
 
 
-PY3 = sys.version_info[0] >= 3
-if PY3:
-    import urllib.parse as urlparse
-    _MAX_CSRF_KEY = 2 << 63
-else:
-    import urlparse
-    _MAX_CSRF_KEY = long(2 << 63)
+_MAX_CSRF_KEY = 2 << 63
 
 
 if hasattr(random, 'SystemRandom'):
@@ -470,7 +464,7 @@ class SeaSurf(object):
         _app_ctx_stack.top.csrf_token_requested = True
 
         token = getattr(_app_ctx_stack.top, self._csrf_name, None)
-        if PY3 and isinstance(token, bytes):
+        if isinstance(token, bytes):
             return token.decode('utf8')
         return token
 

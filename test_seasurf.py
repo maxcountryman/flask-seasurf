@@ -1,28 +1,15 @@
 from __future__ import with_statement
 
-import sys
+import mock
+import unittest
 
 from flask import Flask, render_template_string, request
 from flask_seasurf import SeaSurf, REASON_NO_REQUEST
 from werkzeug.exceptions import Forbidden
 from werkzeug.http import parse_cookie
 
-try:
-    # Python 2.6
-    import unittest2 as unittest
-except ImportError:
-    # Python >= 2.7
-    import unittest
 
-try:
-    from unittest import mock
-except ImportError:
-    import mock
-
-if sys.version_info[0] < 3:
-    b = lambda s: s
-else:
-    b = lambda s: s.encode('utf-8')
+b = lambda s: s.encode('utf-8')
 
 
 def get_cookie(response, cookie_name):
@@ -234,7 +221,7 @@ class SeaSurfTestCase(BaseTestCase):
             headers = {
                 self.csrf._csrf_header_name: token,
             }
-            data = '{]\]{'
+            data = '{]]{'
             content_type = 'application/json'
 
             rv = client.post('/bar',
@@ -255,7 +242,7 @@ class SeaSurfTestCase(BaseTestCase):
         expected_exception_message = '403 Forbidden: {0}'.format(REASON_NO_REQUEST)
         self.assertEqual(str(ex.exception), expected_exception_message)
 
-    def test_generate_token(self):
+    def test_secrets(self):
         try:
             import secrets
             with mock.patch('secrets.token_hex', return_value='3b0b5a5c1de3c2ed'):
@@ -751,7 +738,7 @@ class SeaSurfTestCaseGenerateNewToken(BaseTestCase):
 
     def test_generate_new_token(self):
         with self.app.test_client() as client:
-            res1 = client.get('/foo')
+            client.get('/foo')
             tokenA = self.csrf._get_token()
 
             client.set_cookie('www.example.com', self.csrf._csrf_name, tokenA)
