@@ -115,6 +115,7 @@ class SeaSurf(object):
     def __init__(self, app=None):
         self._exempt_views = set()
         self._include_views = set()
+        self._set_cookie_views = set()
         self._exempt_urls = tuple()
         self._disable_cookie = None
         self._skip_validation = None
@@ -219,6 +220,30 @@ class SeaSurf(object):
 
         self._disable_cookie = callback
         return callback
+
+    def set_cookie(self, view):
+        '''
+        A decorator that can be used to force setting the CSRF token cookie on
+        the request. By default, the CSRF token cookie is set on all requests
+        unless the view is decorated with :class:`exempt`. This decorator is a
+        noop unless used in conjuction with :class:`exempt`.
+
+        Example usage of :class:`set_cookie` might look something like this::
+
+            csrf = SeaSurf(app)
+
+            @csrf.exempt
+            @csrf.set_cookie
+            @app.route('/some_view')
+            def some_view():
+                return render_template('some_view.html')
+
+        :param view: The view to be wrapped by the decorator.
+        '''
+
+        view_location = '{0}.{1}'.format(view.__module__, view.__name__)
+        self._set_cookie_views.add(view_location)
+        return view
 
     def skip_validation(self, callback):
         '''
@@ -332,9 +357,8 @@ class SeaSurf(object):
 
     def _should_use_token(self, view_func):
         '''
-        Given a view function, determine whether or not we should deliver a
-        CSRF token to this view through the response and validate CSRF tokens
-        upon requests to this view.
+        Given a view function, determine whether or not we should validate CSRF
+        tokens upon requests to this view.
 
         :param view_func: A view function.
         '''
@@ -357,6 +381,23 @@ class SeaSurf(object):
             return False
 
         return True
+
+    def _should_set_cookie(self, view_func):
+        '''
+        Given a view function, determine whether or not we should deliver a
+        CSRF token to this view through the response.
+
+        :param view_func: A view function.
+        '''
+
+        if self._should_use_token(view_func):
+            return True
+
+        view = '{0}.{1}'.format(view_func.__module__, view_func.__name__)
+        if view in self._set_cookie_views:
+            return True
+
+        return False
 
     def _before_request(self):
         '''
@@ -417,7 +458,7 @@ class SeaSurf(object):
             return response
 
         _view_func = getattr(_app_ctx_stack.top, '_view_func', False)
-        if not (_view_func and self._should_use_token(_view_func)):
+        if not (_view_func and self._should_set_cookie(_view_func)):
             return response
 
         # Don't apply set_cookie if the request included the cookie
