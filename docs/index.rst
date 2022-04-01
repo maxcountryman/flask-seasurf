@@ -48,53 +48,53 @@ be added to the Flask app's config:
 .. list-table:: Title
    :widths: 25 50 25
    :header-rows: 1
-   
+
    * - Variable name
      - Description
-     - Default   
-     
+     - Default
+
    * - `CSRF_COOKIE_NAME`
      - The cookie name, also used as the session variable name.
      - `'_csrf_token'`
-     
+
    * - `CSRF_COOKIE_TIMEOUT`
-     - After what time the cookie expires. 
+     - After what time the cookie expires.
      - `timedelta(days=5)`
-     
+
    * - `CSRF_COOKIE_SECURE`
-     - Whether the cookie is required to be transferred over a secure connection. 
+     - Whether the cookie is required to be transferred over a secure connection.
      - `False`
-     
+
    * - `CSRF_COOKIE_HTTPONLY`
      - HttpOnly flag of the cookie. Whether it can be read by JS.
      - `False`
-     
+
    * - `CSRF_COOKIE_PATH`
      - Indicates a URL path that must exist in the requested URL in order to send the Cookie header
      - `'/'`
-     
+
    * - `CSRF_COOKIE_DOMAIN`
      - Setting the cookie domain.
      - `None`
-     
+
    * - `CSRF_COOKIE_SAMESITE`
      - Setting the cookie SameSite policy.
      - `'Lax'`
-     
+
    * - `CSRF_CHECK_REFERER`
      - Enable checking the `Referer` header.
      - True
-     
+
    * - `CSRF_DISABLE`
-     - Disables CSRF protection globally. 
+     - Disables CSRF protection globally.
      - `False` unless `app.config['TESTING']` is set to `True`
-     
+
    * - `CSRF_HEADER_NAME`
-     - The header that would contain the token. 
+     - The header that would contain the token.
      - `'X-CSRFToken'`
-     
+
    * - `SEASURF_INCLUDE_OR_EXEMPT_VIEWS`
-     - Possible values: `'exempt'`, `'include'`. 
+     - Possible values: `'exempt'`, `'include'`.
      - `'exempt'`
 
 All the values prefixed with `CSRF_COOKIE_` are passed verbatim to the `Response.set_cookie
@@ -161,7 +161,7 @@ like so:
 
 .. code-block:: python
 
-    from flask_wtf import Form, HiddenField
+    from wtforms import Form, HiddenField
     from flask import g
 
     # import your app here
@@ -181,12 +181,12 @@ Now assume we define a module `forms` as such:
 
 .. code-block:: python
 
-    from flask_wtf import DataRequired, TextField, PasswordField, Email
+    from wtforms.validators import DataRequired, StringField, PasswordField, Email
     from seasurf_form import SeaSurfForm
 
 
     class LoginForm(SeaSurfForm):
-        email = TextField('email', validators=[DataRequired(), Email()])
+        email = StringField('email', validators=[DataRequired(), Email()])
         password = PasswordField('password', validators=[DataRequired()])
 
 This is the basis of our login form which we will serve up in a view to the
