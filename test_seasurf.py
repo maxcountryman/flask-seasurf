@@ -806,18 +806,19 @@ class SeaSurfTestCaseGenerateNewToken(BaseTestCase):
 
 def suite():
     suite = unittest.TestSuite()
-    suite.addTest(unittest.makeSuite(SeaSurfTestCase))
-    suite.addTest(unittest.makeSuite(SeaSurfTestCaseExemptViews))
-    suite.addTest(unittest.makeSuite(SeaSurfTestCaseIncludeViews))
-    suite.addTest(unittest.makeSuite(SeaSurfTestCaseExemptUrls))
-    suite.addTest(unittest.makeSuite(SeaSurfTestCaseDisableCookie))
-    suite.addTest(unittest.makeSuite(SeaSurfTestCaseEnableCookie))
-    suite.addTest(unittest.makeSuite(SeaSurfTestCaseSkipValidation))
-    suite.addTest(unittest.makeSuite(SeaSurfTestCaseSave))
-    suite.addTest(unittest.makeSuite(SeaSurfTestCaseSetCookie))
-    suite.addTest(unittest.makeSuite(SeaSurfTestCaseReferer))
-    suite.addTest(unittest.makeSuite(SeaSurfTestManualValidation))
-    suite.addTest(unittest.makeSuite(SeaSurfTestCaseGenerateNewToken))
+
+    suite.addTest(unittest.TestLoader().loadTestsFromTestCase(SeaSurfTestCase))
+    suite.addTest(unittest.TestLoader().loadTestsFromTestCase(SeaSurfTestCaseExemptViews))
+    suite.addTest(unittest.TestLoader().loadTestsFromTestCase(SeaSurfTestCaseIncludeViews))
+    suite.addTest(unittest.TestLoader().loadTestsFromTestCase(SeaSurfTestCaseExemptUrls))
+    suite.addTest(unittest.TestLoader().loadTestsFromTestCase(SeaSurfTestCaseDisableCookie))
+    suite.addTest(unittest.TestLoader().loadTestsFromTestCase(SeaSurfTestCaseEnableCookie))
+    suite.addTest(unittest.TestLoader().loadTestsFromTestCase(SeaSurfTestCaseSkipValidation))
+    suite.addTest(unittest.TestLoader().loadTestsFromTestCase(SeaSurfTestCaseSave))
+    suite.addTest(unittest.TestLoader().loadTestsFromTestCase(SeaSurfTestCaseSetCookie))
+    suite.addTest(unittest.TestLoader().loadTestsFromTestCase(SeaSurfTestCaseReferer))
+    suite.addTest(unittest.TestLoader().loadTestsFromTestCase(SeaSurfTestManualValidation))
+    suite.addTest(unittest.TestLoader().loadTestsFromTestCase(SeaSurfTestCaseGenerateNewToken))
     return suite
 
 
