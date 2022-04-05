@@ -1,2 +1,2 @@
+Sphinx>=4
 Pallets-Sphinx-Themes
-sphinx>=4.2.0
