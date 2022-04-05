@@ -214,8 +214,8 @@ class SeaSurf(object):
             @csrf.disable_cookie
             def disable_cookie(response):
                 if is_api_request():
-                    return False
-                return True
+                    return True
+                return False
         '''
 
         self._disable_cookie = callback
