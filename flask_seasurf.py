@@ -11,7 +11,7 @@
 
 from __future__ import absolute_import
 
-__version_info__ = ('1', '1', '0')
+__version_info__ = ('1', '1', '1')
 __version__ = '.'.join(__version_info__)
 __author__ = 'Max Countryman'
 __license__ = 'BSD'
