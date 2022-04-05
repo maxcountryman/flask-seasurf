@@ -164,9 +164,9 @@ class SeaSurf(object):
             csrf = SeaSurf(app)
 
             @csrf.exempt
-            @app.route('/some_view')
-            def some_view():
-                return render_template('some_view.html')
+            @app.route('/insecure')
+            def insecure():
+                return render_template('insecure.html')
 
         :param view: The view to be wrapped by the decorator.
         '''
@@ -180,7 +180,8 @@ class SeaSurf(object):
 
     def include(self, view):
         '''
-        A decorator that can be used to include a view in CSRF validation.
+        A decorator that can be used to include a view in CSRF validation when
+        `SEASURF_INCLUDE_OR_EXEMPT_VIEWS` is set to `"include"`.
 
         Example usage of :class:`include` might look something like this::
 
@@ -260,9 +261,9 @@ class SeaSurf(object):
 
             @csrf.skip_validation
             def skip_validation(request):
-                if is_api_request():
-                    return False
-                return True
+                if not_using_cookie_authorization():
+                    return True
+                return False
         '''
 
         self._skip_validation = callback
