@@ -326,7 +326,8 @@ class SeaSurf(object):
         if not request_csrf_token:
             # Check to see if the data is being sent as JSON
             try:
-                if hasattr(request, 'json') and request.json:
+                if hasattr(request, 'is_json') and request.is_json \
+                  and hasattr(request, 'json') and request.json:
                     request_csrf_token = request.json.get(self._csrf_name, '')
 
             # Except Attribute error if JSON data is a list
