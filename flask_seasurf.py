@@ -25,8 +25,7 @@ import random
 from datetime import datetime, timedelta
 import urllib.parse as urlparse
 
-from flask import (_app_ctx_stack, current_app, g, has_request_context, request,
-                   session)
+from flask import current_app, g, has_request_context, request, session
 from werkzeug.exceptions import BadRequest, Forbidden
 
 try:
@@ -295,7 +294,7 @@ class SeaSurf(object):
             raise Forbidden(description=REASON_NO_REQUEST)
 
         # Tell _after_request to still set the CSRF token cookie when this
-        # view was exemp, but validate was called manually in the view
+        # view was exempt, but validate was called manually in the view
         g.csrf_validation_checked = True
 
         server_csrf_token = session.get(self._csrf_name, None)
@@ -355,7 +354,7 @@ class SeaSurf(object):
         new_csrf_token = self._generate_token()
 
         session[self._csrf_name] = new_csrf_token
-        setattr(_app_ctx_stack.top, self._csrf_name, new_csrf_token)
+        g.seasurf_csrf_token = new_csrf_token
 
     def _should_use_token(self, view_func):
         '''
@@ -364,8 +363,7 @@ class SeaSurf(object):
 
         :param view_func: A view function.
         '''
-        if (hasattr(g, 'csrf_validation_checked') and
-            getattr(g, 'csrf_validation_checked')):
+        if getattr(g, 'csrf_validation_checked', False):
             return True
 
         if view_func is None or self._type not in ('exempt', 'include'):
@@ -420,21 +418,18 @@ class SeaSurf(object):
 
         server_csrf_token = session.get(self._csrf_name, None)
         if not server_csrf_token:
-            setattr(_app_ctx_stack.top,
-                    self._csrf_name,
-                    self._generate_token())
-        else:
-            setattr(_app_ctx_stack.top, self._csrf_name, server_csrf_token)
+            server_csrf_token = self._generate_token()
+
+        g.seasurf_csrf_token = server_csrf_token
 
         # Always set this to let the response know whether or not to set the
         # CSRF token.
-        _app_ctx_stack.top._view_func = \
-            current_app.view_functions.get(request.endpoint)
+        g.seasurf_view_func = current_app.view_functions.get(request.endpoint)
 
         if request.method not in ('GET', 'HEAD', 'OPTIONS', 'TRACE'):
             # Retrieve the view function based on the request endpoint and
             # then compare it to the set of exempted views
-            if not self._should_use_token(_app_ctx_stack.top._view_func):
+            if not self._should_use_token(g.seasurf_view_func):
                 return
 
             if self._skip_validation and self._skip_validation(request):
@@ -444,29 +439,31 @@ class SeaSurf(object):
 
     def _after_request(self, response):
         '''
-        Checks if the `flask._app_ctx_object` object contains the CSRF token,
+        Checks if the Flask app context contains the CSRF token,
         and if the view in question has CSRF protection enabled. If both,
         goes on to check if a cookie needs to be set by verifying the cookie
         presented by the request matches the CSRF token and the user has not
         requested a token in a Jinja template.
 
-        If the token does not match or the user has requested a token,returns
+        If the token does not match or the user has requested a token, returns
         the response with a cookie containing the token. Otherwise we return
         the response unaltered. Bound to the Flask `after_request` decorator.
 
         :param response: A Flask Response object.
         '''
-        if getattr(_app_ctx_stack.top, self._csrf_name, None) is None:
+        if getattr(g, 'seasurf_csrf_token', None) is None:
             return response
 
-        _view_func = getattr(_app_ctx_stack.top, '_view_func', False)
+        _view_func = getattr(g, 'seasurf_view_func', None)
         if not (_view_func and self._should_set_cookie(_view_func)):
             return response
 
         # Don't apply set_cookie if the request included the cookie
         # and did not request a token (ie simple AJAX requests, etc)
-        csrf_cookie_matches = request.cookies.get(self._csrf_name, False) == getattr(_app_ctx_stack.top, self._csrf_name)
-        if csrf_cookie_matches and not getattr(_app_ctx_stack.top, 'csrf_token_requested', False):
+        csrf_cookie_matches = \
+            request.cookies.get(self._csrf_name, False) == g.seasurf_csrf_token
+        if csrf_cookie_matches and not getattr(g, 'seasurf_csrf_token_requested',
+                                               False):
             return response
 
         if self._disable_cookie and self._disable_cookie(response):
@@ -482,7 +479,7 @@ class SeaSurf(object):
         :param response: A Flask Response object.
         '''
 
-        csrf_token = getattr(_app_ctx_stack.top, self._csrf_name)
+        csrf_token = g.seasurf_csrf_token
         if session.get(self._csrf_name) != csrf_token:
             session[self._csrf_name] = csrf_token
         expires_at = datetime.utcnow() + self._csrf_timeout
@@ -507,9 +504,9 @@ class SeaSurf(object):
         # will only pass the Set-Cookie header when a request needs a token generated
         # generated or has requested one in it's template.
         # See https://github.com/django/django/blob/86de930f/django/middleware/csrf.py#L74
-        _app_ctx_stack.top.csrf_token_requested = True
+        g.seasurf_csrf_token_requested = True
 
-        token = getattr(_app_ctx_stack.top, self._csrf_name, None)
+        token = getattr(g, 'seasurf_csrf_token', None)
         if isinstance(token, bytes):
             return token.decode('utf8')
         return token
