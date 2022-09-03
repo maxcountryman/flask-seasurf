@@ -338,8 +338,7 @@ class SeaSurf(object):
             # PUT and DELETE possible.
             request_csrf_token = request.headers.get(self._csrf_header_name, '')
 
-        some_none = None in (request_csrf_token, server_csrf_token)
-        if some_none or not safe_str_cmp(request_csrf_token, server_csrf_token):
+        if not self._safe_str_cmp(request_csrf_token, server_csrf_token):
             error = (REASON_BAD_TOKEN, request.path)
             error = u'Forbidden ({0}): {1}'.format(*error)
             current_app.logger.warning(error)
@@ -521,3 +520,16 @@ class SeaSurf(object):
         else:
             salt = str(random.randrange(0, _MAX_CSRF_KEY)).encode('utf-8')
             return hashlib.sha1(salt).hexdigest()
+
+    def _safe_str_cmp(self, a, b):
+        '''
+        Compares two strings for equality while preventing timing attacks.
+        '''
+
+        if a is None or b is None:
+            return False
+
+        try:
+            return safe_str_cmp(a, b)
+        except:
+            return False
