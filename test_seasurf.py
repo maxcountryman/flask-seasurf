@@ -116,6 +116,19 @@ class SeaSurfTestCase(BaseTestCase):
             rv = client.post(u'/bar/\xf8', data=data)
             self.assertEqual(rv.status_code, 200, rv)
 
+    def test_token_with_non_ascii_chars(self):
+        """Should fail with 403"""
+        tokenA = self.csrf._generate_token()
+        tokenB = '🥳'
+        data = {'_csrf_token': tokenB}
+        with self.app.test_client() as client:
+            with client.session_transaction() as sess:
+                sess[self.csrf._csrf_name] = tokenA
+                client.set_cookie('www.example.com', self.csrf._csrf_name, tokenB)
+
+            rv = client.post('/bar', data=data)
+            self.assertEqual(rv.status_code, 403, rv)
+
     def test_https_bad_referer(self):
         with self.app.test_client() as client:
             with client.session_transaction() as sess:
