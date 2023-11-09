@@ -741,7 +741,7 @@ class SeaSurfTestCaseSetCookie(BaseTestCase):
                           res3.headers.get('Set-Cookie', ''),
                           'CSRF cookie always be re-set if a token is requested by the template')
 
-            client.cookie_jar.clear()
+            client.delete_cookie(self.csrf._csrf_name)
 
             res4 = client.get('/foo')
 
@@ -755,9 +755,9 @@ class SeaSurfTestCaseSetCookie(BaseTestCase):
             res1 = client.post('/bar', headers=headers)
             self.assertEqual(res1.status_code, 403)
 
-            for cookie in client.cookie_jar:
-                if cookie.name == self.csrf._csrf_name:
-                    headers[self.csrf._csrf_header_name] = cookie.value
+            cookie = client.get_cookie(self.csrf._csrf_name)
+            if cookie:
+                headers[self.csrf._csrf_header_name] = cookie.value
 
             res2 = client.post('/bar', headers=headers)
             self.assertEqual(res2.status_code, 200)
