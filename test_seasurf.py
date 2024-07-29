@@ -741,7 +741,7 @@ class SeaSurfTestCaseSetCookie(BaseTestCase):
                           res3.headers.get('Set-Cookie', ''),
                           'CSRF cookie always be re-set if a token is requested by the template')
 
-            client.delete_cookie(self.csrf._csrf_name)
+            client.delete_cookie(key=self.csrf._csrf_name)
 
             res4 = client.get('/foo')
 
