@@ -1,4 +1,3 @@
-[![Tests](https://img.shields.io/github/workflow/status/maxcountryman/flask-seasurf/Tests/main?label=tests)](https://github.com/maxcountryman/flask-seasurf/actions)
 [![Tests](https://img.shields.io/github/actions/workflow/status/maxcountryman/flask-seasurf/tests.yml?branch=main)](https://github.com/maxcountryman/flask-seasurf/actions)
 [![Version](https://img.shields.io/pypi/v/Flask-SeaSurf.svg)](https://pypi.python.org/pypi/Flask-SeaSurf)
 [![Supported Python Versions](https://img.shields.io/pypi/pyversions/Flask-SeaSurf.svg)](https://pypi.python.org/pypi/Flask-SeaSurf)
