@@ -3,7 +3,7 @@ from __future__ import with_statement
 import mock
 import unittest
 
-from flask import Flask, render_template_string, request
+from flask import Flask, Blueprint, render_template_string, request
 from flask_seasurf import SeaSurf, REASON_NO_REQUEST
 from werkzeug.exceptions import Forbidden
 from werkzeug.http import parse_cookie
@@ -58,6 +58,16 @@ class SeaSurfTestCase(BaseTestCase):
         def bar(term=None):
             return 'foo'
 
+        bp = Blueprint('blueprint', __name__)
+
+        @app.extensions['seasurf'].exempt
+        @bp.route('/baz', methods=['POST'])
+        @bp.route('/baz/<term>', methods=['POST'])
+        def baz(term=None):
+            return 'qux'
+
+        app.register_blueprint(bp)
+
     def test_generate_token(self):
         self.assertIsNotNone(self.csrf._generate_token())
 
@@ -76,6 +86,13 @@ class SeaSurfTestCase(BaseTestCase):
 
         rv = self.app.test_client().post(u'/foo/\xf8')
         self.assertIn(b('bar'), rv.data)
+
+    def test_exempt_bp(self):
+        rv = self.app.test_client().post('/baz')
+        self.assertIn(b('qux'), rv.data)
+
+        rv = self.app.test_client().post(u'/baz/\xf8')
+        self.assertIn(b('qux'), rv.data)
 
     def test_token_validation(self):
         # should produce a logger warning
