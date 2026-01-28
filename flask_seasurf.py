@@ -152,6 +152,9 @@ class SeaSurf(object):
         self._type = app.config.get('SEASURF_INCLUDE_OR_EXEMPT_VIEWS',
                                     'exempt')
 
+        app.extensions = getattr(app, 'extensions', {})
+        app.extensions['seasurf'] = self
+
         return self
 
     def exempt(self, view):
