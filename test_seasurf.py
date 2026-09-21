@@ -431,6 +431,26 @@ class SeaSurfTestCaseDisableCookie(unittest.TestCase):
             csrf.validate()
             return 'bar'
 
+    def test_disabled_cookie_persists_token_for_validation(self):
+        with self.app.test_client() as client:
+            response = client.get('/foo/baz')
+            token = self.csrf._get_token()
+            self.assertIsNone(get_cookie(response, self.csrf._csrf_name))
+            with client.session_transaction() as sess:
+                self.assertEqual(sess.get(self.csrf._csrf_name), token)
+
+            response = client.post('/manual', data={self.csrf._csrf_name: token})
+            self.assertEqual(response.status_code, 200)
+            self.assertIsNone(get_cookie(response, self.csrf._csrf_name))
+
+            response = client.get('/foo/baz')
+            self.assertEqual(self.csrf._get_token(), token)
+            self.assertIsNone(get_cookie(response, self.csrf._csrf_name))
+
+            for data in ({}, {self.csrf._csrf_name: 'wrong-token'}):
+                response = client.post('/manual', data=data)
+                self.assertEqual(response.status_code, 403)
+
     def test_has_csrf_cookie(self):
         with self.app.test_client() as c:
             rv = c.get('/foo/quz')
