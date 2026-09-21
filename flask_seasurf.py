@@ -205,6 +205,9 @@ class SeaSurf(object):
         for the current request.
 
         The decorated function must return :class:`True` or :class:`False`.
+        Disabling the CSRF cookie does not disable validation or prevent the
+        token from being saved in the Flask session. Clients must still send
+        the token, for example in the configured CSRF header.
 
         Example usage of :class:`disable_cookie` might look something
         like::
@@ -457,6 +460,11 @@ class SeaSurf(object):
         if not (_view_func and self._should_set_cookie(_view_func)):
             return response
 
+        # Keep the session token even when the separate CSRF cookie is disabled.
+        csrf_token = g.seasurf_csrf_token
+        if session.get(self._csrf_name) != csrf_token:
+            session[self._csrf_name] = csrf_token
+
         # Don't apply set_cookie if the request included the cookie
         # and did not request a token (ie simple AJAX requests, etc)
         csrf_cookie_matches = \
@@ -479,8 +487,6 @@ class SeaSurf(object):
         '''
 
         csrf_token = g.seasurf_csrf_token
-        if session.get(self._csrf_name) != csrf_token:
-            session[self._csrf_name] = csrf_token
         expires_at = datetime.utcnow() + self._csrf_timeout
         response.set_cookie(self._csrf_name,
                             csrf_token,
