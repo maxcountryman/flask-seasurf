@@ -129,6 +129,21 @@ class SeaSurfTestCase(BaseTestCase):
             rv = client.post('/bar', data=data)
             self.assertEqual(rv.status_code, 403, rv)
 
+    def test_token_validation_with_bytes_secret_key(self):
+        self.app.secret_key = b'\x00\xff\x80test-secret-key'
+        token = self.csrf._generate_token()
+
+        with self.app.test_client() as client:
+            with client.session_transaction() as sess:
+                sess[self.csrf._csrf_name] = token
+
+            for request_token, expected_status in (
+                    (token, 200), ('not-the-session-token', 403), ('', 403)):
+                with self.subTest(token_matches=request_token == token):
+                    response = client.post(
+                        '/bar', data={self.csrf._csrf_name: request_token})
+                    self.assertEqual(response.status_code, expected_status)
+
     def test_https_bad_referer(self):
         with self.app.test_client() as client:
             with client.session_transaction() as sess:
